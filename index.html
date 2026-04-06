@@ -9,64 +9,60 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
-        body { background-color: #efe7dd; font-family: sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; }
+        body { background-color: #efe7dd; font-family: -apple-system, sans-serif; overflow: hidden; }
         .chat-container { height: calc(100vh - 130px); scroll-behavior: smooth; }
-        .bubble { max-width: 85%; padding: 8px 12px; font-size: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; word-wrap: break-word; }
+        .bubble { max-width: 85%; padding: 8px 12px; font-size: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; }
         .bubble-me { background-color: #dcf8c6; border-radius: 12px 12px 0 12px; align-self: flex-end; }
         .bubble-other { background-color: #ffffff; border-radius: 12px 12px 12px 0; align-self: flex-start; }
-        .media-content { max-width: 220px; border-radius: 8px; display: block; margin: 4px 0; }
-        
-        #reaction-bar { display: none; position: fixed; z-index: 300; background: white; border-radius: 30px; padding: 5px 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); gap: 10px; align-items: center; border: 1px solid #eee; }
-        .react-btn { font-size: 22px; cursor: pointer; }
-        .date-divider { text-align: center; margin: 20px 0; clear: both; }
-        .date-divider span { background: rgba(0,0,0,0.2); color: white; padding: 3px 14px; border-radius: 12px; font-size: 11px; font-weight: bold; }
-        .heart-react { position: absolute; bottom: -10px; right: 5px; background: white; border-radius: 12px; padding: 1px 6px; font-size: 13px; box-shadow: 0 2px 5px rgba(0,0,0,0.15); border: 1px solid #f0f0f0; }
-        #status-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        .online { background: #4caf50; } .offline { background: #9e9e9e; }
-        #msg-menu { display: none; position: fixed; z-index: 200; background: white; border-radius: 15px; width: 150px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); overflow: hidden; border: 1px solid #eee; }
-        .menu-item { padding: 14px; font-size: 14px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
-        #reply-preview { display: none; background: #e9edef; padding: 10px 15px; border-left: 5px solid #00a884; position: relative; }
+        .media-content { max-width: 200px; border-radius: 8px; display: block; margin: 4px 0; }
+        #reaction-bar, #msg-menu { display: none; position: fixed; z-index: 300; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border: 1px solid #eee; }
+        .date-divider { text-align: center; margin: 20px 0; }
+        .date-divider span { background: rgba(0,0,0,0.2); color: white; padding: 3px 12px; border-radius: 10px; font-size: 11px; }
+        .heart-react { position: absolute; bottom: -8px; right: 5px; background: white; border-radius: 10px; padding: 1px 5px; font-size: 12px; border: 1px solid #eee; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        #search-box { display: none; }
     </style>
 </head>
 <body class="flex flex-col h-screen max-w-md mx-auto bg-white border-x">
 
-    <div id="reaction-bar">
-        <div class="react-btn" onclick="addReact('❤️')">❤️</div>
-        <div class="react-btn" onclick="addReact('😂')">😂</div>
-        <div class="react-btn" onclick="addReact('😮')">😮</div>
-        <div class="react-btn" onclick="addReact('😢')">😢</div>
-        <div class="react-btn" onclick="addReact('👍')">👍</div>
-        <div class="plus-btn cursor-pointer" onclick="customReact()">+</div>
+    <div id="reaction-bar" class="p-2 flex gap-3">
+        <span class="cursor-pointer text-2xl" onclick="addReact('❤️')">❤️</span>
+        <span class="cursor-pointer text-2xl" onclick="addReact('😂')">😂</span>
+        <span class="cursor-pointer text-2xl" onclick="addReact('😮')">😮</span>
+        <span class="cursor-pointer text-2xl" onclick="addReact('😢')">😢</span>
+        <span class="cursor-pointer text-2xl" onclick="addReact('👍')">👍</span>
     </div>
 
-    <div id="msg-menu">
-        <div class="menu-item text-red-500 font-bold" onclick="executeUnsend()"><i class="fas fa-trash-alt"></i> 撤回</div>
-        <div class="menu-item text-blue-600" onclick="startReply()"><i class="fas fa-reply"></i> 回覆</div>
+    <div id="msg-menu" class="w-32 overflow-hidden">
+        <div class="p-3 text-red-500 font-bold border-b cursor-pointer" onclick="executeUnsend()">撤回</div>
+        <div class="p-3 text-blue-600 cursor-pointer" onclick="startReply()">回覆</div>
     </div>
 
-    <header class="h-14 border-b flex items-center justify-between px-4 bg-white sticky top-0 z-20 shadow-sm">
-        <div class="flex items-center">
-            <span id="status-dot" class="online"></span>
-            <span id="user-display" class="font-bold text-gray-800 text-sm">E ²</span>
+    <header class="h-14 border-b flex items-center justify-between px-4 bg-white z-20">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+            <span id="user-display" class="font-bold text-sm">E ²</span>
         </div>
-        <i class="fas fa-search text-gray-400"></i>
+        <div class="flex gap-4 items-center">
+            <input id="search-input" type="text" placeholder="搜尋..." class="hidden border rounded-full px-3 py-1 text-xs outline-none w-24" oninput="doSearch()">
+            <i class="fas fa-search text-gray-400 cursor-pointer" onclick="toggleSearch()"></i>
+        </div>
     </header>
 
     <div id="chat-content" class="chat-container overflow-y-auto p-4 flex flex-col no-scrollbar"></div>
 
-    <div id="reply-preview">
-        <div class="text-[10px] text-[#00a884] font-bold" id="reply-user"></div>
-        <div class="text-xs text-gray-600 truncate" id="reply-text"></div>
-        <i class="fas fa-times-circle absolute right-3 top-3 text-gray-400 cursor-pointer" onclick="cancelReply()"></i>
+    <div id="reply-preview" class="hidden p-2 bg-gray-100 border-l-4 border-green-500 relative">
+        <div id="reply-text" class="text-xs text-gray-500 truncate"></div>
+        <i class="fas fa-times absolute right-2 top-2 text-gray-400" onclick="cancelReply()"></i>
     </div>
 
-    <div class="p-3 bg-[#f0f2f5] flex items-center gap-2 border-t sticky bottom-0">
-        <label class="cursor-pointer text-gray-500 w-10 h-10 flex items-center justify-center text-xl">
-            <i class="fas fa-plus-circle text-[#00a884]"></i>
-            <input type="file" id="file-input" accept="image/*,video/*" class="hidden" onchange="autoProcessFile(this)">
+    <div class="p-3 bg-[#f0f2f5] flex items-center gap-2 border-t">
+        <label class="text-green-600 text-2xl px-1 cursor-pointer">
+            <i class="fas fa-plus-circle"></i>
+            <input type="file" class="hidden" accept="image/*,video/*" onchange="autoProcessFile(this)">
         </label>
-        <input id="chat-input" onpaste="handlePaste(event)" class="flex-1 bg-white border-none rounded-full px-4 py-2 text-sm outline-none shadow-inner" placeholder="打字或貼上 Sticker..." autocomplete="off">
-        <button onclick="sendMessage()" class="bg-[#00a884] text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md">
+        <input id="chat-input" class="flex-1 bg-white rounded-full px-4 py-2 text-sm outline-none" placeholder="打字..." autocomplete="off">
+        <button onclick="sendMessage()" class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center">
             <i class="fas fa-paper-plane text-sm"></i>
         </button>
     </div>
@@ -83,113 +79,97 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
         const urlParams = new URLSearchParams(window.location.search);
         let MY_NAME = urlParams.get('user') || "E";
         document.getElementById('user-display').innerText = "E ² (" + MY_NAME + ")";
 
         let longPressTimer, selectedMsg = null, replyTo = null;
 
-        function handlePaste(e) {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-            for (let item of items) {
-                if (item.type.indexOf("image") !== -1) {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => sendMedia('image', ev.target.result);
-                    reader.readAsDataURL(item.getAsFile());
-                }
-            }
+        function toggleSearch() {
+            const input = document.getElementById('search-input');
+            input.classList.toggle('hidden');
+            if(!input.classList.contains('hidden')) input.focus();
+        }
+
+        function doSearch() {
+            const val = document.getElementById('search-input').value.toLowerCase();
+            document.querySelectorAll('.bubble').forEach(b => {
+                const text = b.innerText.toLowerCase();
+                b.parentElement.parentElement.style.opacity = text.includes(val) ? "1" : "0.2";
+            });
         }
 
         function sendMessage() {
             const input = document.getElementById('chat-input');
             if (!input.value.trim() && !replyTo) return;
-            db.ref('chats').push({ type: 'text', text: input.value, sender: MY_NAME, timestamp: Date.now(), seen: false, reaction: "", replyTo: replyTo });
+            db.ref('chats').push({ type:'text', text: input.value, sender: MY_NAME, timestamp: Date.now(), seen: false, replyTo: replyTo });
             input.value = ""; cancelReply();
         }
 
         function sendMedia(type, data) {
-            db.ref('chats').push({ type: type, data: data, sender: MY_NAME, timestamp: Date.now(), seen: false, reaction: "", replyTo: replyTo });
-            cancelReply();
+            db.ref('chats').push({ type, data, sender: MY_NAME, timestamp: Date.now(), seen: false });
         }
 
         function handleStart(id, sender, text, e) {
-            selectedMsg = { id, sender, text: decodeURIComponent(text) };
+            selectedMsg = { id, sender, text };
             longPressTimer = setTimeout(() => {
                 const rect = e.touches ? e.touches[0] : e;
-                const menu = document.getElementById('msg-menu');
                 const bar = document.getElementById('reaction-bar');
-                bar.style.display = 'flex'; bar.style.top = (rect.clientY - 80) + 'px'; bar.style.left = '40px';
+                const menu = document.getElementById('msg-menu');
+                bar.style.display = 'flex'; bar.style.top = (rect.clientY - 70) + 'px'; bar.style.left = '40px';
                 menu.style.display = 'block'; menu.style.top = (rect.clientY + 10) + 'px'; menu.style.left = '40px';
             }, 600);
         }
 
         function closeAll() { document.getElementById('msg-menu').style.display = 'none'; document.getElementById('reaction-bar').style.display = 'none'; }
-        window.onmousedown = (e) => { if(!e.target.closest('#msg-menu') && !e.target.closest('#reaction-bar')) closeAll(); };
+        window.onclick = (e) => { if(!e.target.closest('#msg-menu') && !e.target.closest('#reaction-bar')) closeAll(); };
 
-        function addReact(emoji) { if(selectedMsg) db.ref('chats/' + selectedMsg.id).update({ reaction: emoji }); closeAll(); }
-        function customReact() { const emoji = prompt("Emoji?"); if(emoji) addReact(emoji); }
-        function executeUnsend() { if(selectedMsg.sender === MY_NAME) db.ref('chats/' + selectedMsg.id).remove(); closeAll(); }
-        function startReply() {
-            replyTo = { id: selectedMsg.id, user: selectedMsg.sender, text: selectedMsg.text || "[媒體]" };
+        function addReact(emoji) { if(selectedMsg) db.ref('chats/'+selectedMsg.id).update({ reaction: emoji }); closeAll(); }
+        function executeUnsend() { if(selectedMsg.sender === MY_NAME) db.ref('chats/'+selectedMsg.id).remove(); closeAll(); }
+        function startReply() { 
+            replyTo = { user: selectedMsg.sender, text: selectedMsg.text || "[媒體]" };
             document.getElementById('reply-preview').style.display = 'block';
-            document.getElementById('reply-user').innerText = replyTo.user;
-            document.getElementById('reply-text').innerText = replyTo.text;
-            document.getElementById('chat-input').focus(); closeAll();
+            document.getElementById('reply-text').innerText = replyTo.user + ": " + replyTo.text;
+            closeAll();
         }
         function cancelReply() { replyTo = null; document.getElementById('reply-preview').style.display = 'none'; }
-        function scrollToMsg(id) { const el = document.getElementById('msg-' + id); if(el) el.scrollIntoView({behavior:'smooth', block:'center'}); }
 
-        // --- 強制即時標記 Seen 邏輯 ---
-        db.ref('chats').on('child_added', (snapshot) => {
-            const msg = snapshot.val();
-            const id = snapshot.key;
-            if (msg.sender !== MY_NAME && msg.seen === false) {
-                db.ref('chats/' + id).update({ seen: true });
-            }
+        // Seen 邏輯
+        db.ref('chats').on('child_added', snap => {
+            if(snap.val().sender !== MY_NAME && !snap.val().seen) db.ref('chats/'+snap.key).update({seen:true});
         });
 
-        // --- 渲染 UI ---
-        db.ref('chats').on('value', (snap) => {
+        // 渲染對話 (優化版：只渲染一次)
+        db.ref('chats').on('value', snap => {
             const box = document.getElementById('chat-content');
-            box.innerHTML = ""; let lastDate = "";
+            let html = ""; let lastD = "";
             snap.forEach(c => {
-                const m = c.val(); const id = c.key;
-                const dateStr = new Date(m.timestamp).toLocaleDateString();
-                if (dateStr !== lastDate) {
-                    box.innerHTML += `<div class="date-divider"><span>${dateStr === new Date().toLocaleDateString() ? '今日' : dateStr}</span></div>`;
-                    lastDate = dateStr;
-                }
-                const isMe = m.sender === MY_NAME;
-                const time = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const safeText = encodeURIComponent(m.text || "");
-                const replyHtml = m.replyTo ? `<div class="bg-black/5 border-l-4 border-[#00a884] p-2 rounded text-[11px] mb-1 opacity-80 cursor-pointer" onclick="scrollToMsg('${m.replyTo.id}')"><strong>${m.replyTo.user}</strong>: ${m.replyTo.text}</div>` : "";
-                const reactHtml = m.reaction ? `<div class="heart-react">${m.reaction}</div>` : "";
-                let content = m.type === 'image' ? `<img src="${m.data}" class="media-content">` : m.type === 'video' ? `<video src="${m.data}" controls class="media-content"></video>` : `<span>${m.text}</span>`;
-                
-                let seenText = (isMe && m.seen) ? `<div class="text-[9px] text-gray-400 mt-1 mr-1">seen</div>` : "";
-
-                box.innerHTML += `
-                    <div id="msg-${id}" class="flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-4 px-2" 
-                         ontouchstart="handleStart('${id}', '${m.sender}', '${safeText}', event)" ontouchend="clearTimeout(longPressTimer)">
-                        <span class="text-[10px] text-gray-400 mb-1 px-1">${m.sender}</span>
-                        <div class="flex ${isMe ? 'flex-row' : 'flex-row-reverse'} items-end gap-1">
+                const m = c.val(); const isMe = m.sender === MY_NAME;
+                const d = new Date(m.timestamp).toLocaleDateString();
+                if(d !== lastD) { html += `<div class="date-divider"><span>${d}</span></div>`; lastD = d; }
+                const time = new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                const content = m.type==='text' ? `<span>${m.text}</span>` : `<img src="${m.data}" class="media-content">`;
+                const reply = m.replyTo ? `<div class="text-[10px] opacity-50 border-l-2 border-green-500 pl-1 mb-1">${m.replyTo.text}</div>` : "";
+                const seenText = (isMe && m.seen) ? `<div class="text-[9px] text-gray-400 text-right">seen</div>` : "";
+                html += `
+                    <div class="flex flex-col ${isMe?'items-end':'items-start'} mb-4 px-2" ontouchstart="handleStart('${c.key}','${m.sender}','${m.text||""}', event)" ontouchend="clearTimeout(longPressTimer)">
+                        <div class="flex ${isMe?'flex-row':'flex-row-reverse'} items-end gap-1">
                             <span class="text-[9px] text-gray-400">${time}</span>
-                            <div class="bubble ${isMe ? 'bubble-me' : 'bubble-other'}">
-                                ${replyHtml} ${content} ${reactHtml}
+                            <div class="bubble ${isMe?'bubble-me':'bubble-other'}">
+                                ${reply} ${content} ${m.reaction ? `<div class="heart-react">${m.reaction}</div>` : ""}
                             </div>
                         </div>
                         ${seenText}
                     </div>`;
             });
+            box.innerHTML = html;
             box.scrollTop = box.scrollHeight;
         });
 
-        async function autoProcessFile(input) {
-            const file = input.files[0]; if(!file) return;
+        function autoProcessFile(input) {
             const reader = new FileReader();
-            reader.onload = (e) => sendMedia(file.type.startsWith('video')?'video':'image', e.target.result);
-            reader.readAsDataURL(file);
+            reader.onload = (e) => sendMedia('image', e.target.result);
+            reader.readAsDataURL(input.files[0]);
         }
     </script>
 </body>
