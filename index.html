@@ -271,18 +271,58 @@
             if (tempAvatarBase64) updates.avatar = tempAvatarBase64;
             db.ref('notes/profile').update(updates); closeAll();
         }
+        
+        // --- 優化後的圖片壓縮與傳送功能 ---
         function autoProcessFile(input) {
-            if (input.files[0]) {
-                const r = new FileReader(); r.onload = (e) => {
-                    const img = new Image(); img.onload = () => {
-                        const cvs = document.createElement('canvas'); let w = img.width, h = img.height, max = 800;
-                        if (w > h) { if (w > max) { h *= max/w; w = max; } } else { if (h > max) { w *= max/h; h = max; } }
-                        cvs.width = w; cvs.height = h; cvs.getContext('2d').drawImage(img, 0, 0, w, h);
-                        db.ref('chats').push({ type:'sticker', data: cvs.toDataURL('image/jpeg', 0.6), sender:MY_NAME, timestamp:Date.now(), seen:false });
-                        input.value = "";
-                    }; img.src = e.target.result;
-                }; r.readAsDataURL(input.files[0]);
-            }
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const max_size = 800; // 限制圖片最大長度
+
+                    if (width > height) {
+                        if (width > max_size) {
+                            height *= max_size / width;
+                            width = max_size;
+                        }
+                    } else {
+                        if (height > max_size) {
+                            width *= max_size / height;
+                            height = max_size;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // 壓縮成 JPEG 格式，質素 0.6
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+
+                    db.ref('chats').push({
+                        type: 'sticker',
+                        data: compressedBase64,
+                        sender: MY_NAME,
+                        timestamp: Date.now(),
+                        seen: false,
+                        replyTo: replyTo // 支援圖片回覆
+                    }).then(() => {
+                        input.value = ""; 
+                        cancelReply(); 
+                    }).catch(err => {
+                        alert("傳送失敗：" + err.message);
+                    });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         }
     </script>
 </body>
