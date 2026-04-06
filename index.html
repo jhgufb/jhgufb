@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E ² Chat Elite Edition</title>
+    <title>E ² Chat Elite Edition Fixed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -14,61 +14,55 @@
         body { font-family: -apple-system, sans-serif; overflow: hidden; background: #f0f2f5; }
         
         #chat-bg-layer { position: fixed; inset: 0; z-index: -1; background-color: #efe7dd; background-position: center; background-size: cover; transition: opacity 0.3s; }
-        .chat-container { height: calc(100vh - 130px); scroll-behavior: smooth; position: relative; overflow-y: auto; }
+        .chat-container { height: calc(100vh - 130px); scroll-behavior: smooth; position: relative; overflow-y: auto; z-index: 10; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* 訊息樣式 */
         .bubble { max-width: 80%; padding: 8px 12px; font-size: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; margin-bottom: 2px; }
         .bubble-me { background-color: #dcf8c6; border-radius: 12px 12px 0 12px; align-self: flex-end; }
         .bubble-other { background-color: #ffffff; border-radius: 0 12px 12px 12px; align-self: flex-start; }
         .sticker-mode { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
         .media-content { max-width: 180px; border-radius: 8px; display: block; cursor: pointer; pointer-events: auto !important; }
 
-        /* 頭像樣式 */
-        .avatar-box { width: 35px; height: 35px; min-width: 35px; border-radius: 4px; overflow: hidden; margin-right: 8px; align-self: flex-start; border: 1px solid #eee; }
+        .avatar-box { width: 38px; height: 38px; min-width: 38px; border-radius: 6px; overflow: hidden; margin-right: 8px; align-self: flex-start; border: 1px solid #eee; background: #eee; }
         .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* 預覽與下載 */
-        #photo-viewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; align-items: center; justify-content: center; }
+        #photo-viewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; align-items: center; justify-content: center; }
         #full-img { max-width: 95%; max-height: 80%; object-fit: contain; -webkit-touch-callout: default !important; -webkit-user-select: auto !important; user-select: auto !important; }
-        .viewer-tools { position: absolute; top: 30px; right: 20px; display: flex; gap: 20px; color: white; font-size: 22px; z-index: 3100; }
+        .viewer-tools { position: absolute; top: 30px; right: 20px; display: flex; gap: 20px; color: white; font-size: 22px; z-index: 5100; }
 
-        /* UI 元件 */
-        #reaction-bar { display: none; position: fixed; z-index: 500; background: white; border-radius: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 280px; padding: 10px; overflow-x: auto; white-space: nowrap; }
-        #reaction-bar span { font-size: 24px; margin: 0 8px; cursor: pointer; display: inline-block; }
-        .heart-react { position: absolute; bottom: -8px; right: 5px; background: white; border-radius: 10px; padding: 1px 5px; font-size: 11px; border: 1px solid #eee; z-index: 10; }
-        #msg-menu { display: none; position: fixed; z-index: 500; background: white; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); min-width: 150px; }
-        #bg-settings-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 20px; z-index: 1100; width: 85%; max-width: 300px; }
+        #reaction-bar { display: none; position: fixed; z-index: 2000; background: white; border-radius: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 280px; padding: 10px; overflow-x: auto; white-space: nowrap; }
+        #msg-menu { display: none; position: fixed; z-index: 2000; background: white; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); min-width: 150px; }
+        #bg-settings-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 20px; z-index: 3000; width: 85%; max-width: 300px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
         
-        #search-bar, #media-page { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 56px; background: white; z-index: 1000; align-items: center; padding: 0 16px; }
-        #media-page { height: 100vh; flex-direction: column; align-items: stretch; overflow-y: auto; }
-        .date-divider { text-align: center; margin: 15px 0; }
+        #search-bar { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 56px; background: white; z-index: 1500; align-items: center; padding: 0 16px; border-bottom: 1px solid #eee; }
+        #scroll-to-bottom { display: none; position: fixed; bottom: 85px; right: 20px; width: 42px; height: 42px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; align-items: center; justify-content: center; cursor: pointer; color: #999; }
+        .date-divider { text-align: center; margin: 15px 0; width: 100%; }
         .date-divider span { background: rgba(0,0,0,0.15); color: white; padding: 2px 12px; border-radius: 10px; font-size: 11px; }
     </style>
 </head>
 <body class="flex flex-col h-screen max-w-md mx-auto border-x relative">
 
     <div id="chat-bg-layer"></div>
-    <div id="close-overlay" class="fixed inset-0 z-[400] hidden" onclick="closeAll()"></div>
+    <div id="close-overlay" class="fixed inset-0 z-[1800] hidden" onclick="closeAll()"></div>
     
     <div id="photo-viewer">
         <div class="viewer-tools">
-            <a id="download-link" href="" download="image.jpg" class="p-2"><i class="fas fa-download"></i></a>
+            <a id="download-link" href="" download="chat_image.jpg" class="p-2"><i class="fas fa-download"></i></a>
             <i class="fas fa-times p-2" onclick="document.getElementById('photo-viewer').style.display='none'"></i>
         </div>
         <img id="full-img" src="" onclick="event.stopPropagation()">
     </div>
 
     <div id="bg-settings-modal">
-        <h3 class="font-bold mb-4 text-center">背景設置</h3>
-        <button class="w-full bg-green-600 text-white py-2 rounded-lg mb-4 text-sm" onclick="document.getElementById('bg-input').click()">選擇手機相片</button>
+        <h3 class="font-bold mb-4 text-center text-gray-700">設置</h3>
+        <button class="w-full bg-green-600 text-white py-2 rounded-lg mb-4 text-sm" onclick="document.getElementById('bg-input').click()">更換背景圖片</button>
         <input type="file" id="bg-input" class="hidden" accept="image/*" onchange="applyBackground(this)">
-        <label class="block text-xs text-gray-400 mb-2 text-center">透明度</label>
+        <label class="block text-xs text-gray-400 mb-2 text-center">背景透明度</label>
         <input type="range" id="bg-opacity-slider" min="0.1" max="1" step="0.05" class="w-full accent-green-600" oninput="updateBgOpacity(this.value)">
         <button class="w-full mt-4 font-bold text-green-700 pt-4 border-t" onclick="closeAll()">完成</button>
     </div>
 
-    <header class="h-14 border-b flex items-center justify-between px-4 bg-white z-20 shadow-sm">
+    <header class="h-14 border-b flex items-center justify-between px-4 bg-white z-20 shadow-sm relative">
         <div class="flex items-center gap-2">
             <i class="fas fa-pen text-gray-300 text-[12px] cursor-pointer p-1.5 border rounded" onclick="editProfile()"></i>
             <span id="user-display" class="font-bold text-sm text-gray-700">載入中...</span>
@@ -77,19 +71,21 @@
             <i class="fas fa-palette p-2 cursor-pointer" onclick="openBgSettings()"></i>
             <i class="fas fa-images p-2 cursor-pointer" onclick="toggleMediaPage(true)"></i>
             <i class="fas fa-search p-2 cursor-pointer" onclick="toggleSearch(true)"></i>
-            <i class="fas fa-trash-alt p-2 cursor-pointer text-red-100" onclick="clearAllHistory()"></i>
+            <i class="fas fa-trash-alt p-2 cursor-pointer text-red-200" onclick="clearAllHistory()"></i>
         </div>
     </header>
 
     <div id="search-bar">
         <i class="fas fa-arrow-left text-gray-500 p-2" onclick="toggleSearch(false)"></i>
-        <input id="search-input" type="text" placeholder="搜尋..." class="flex-1 bg-gray-100 rounded-full px-3 py-1 mx-2 outline-none text-sm" oninput="doSearch()">
+        <input id="search-input" type="text" placeholder="搜尋對話內容..." class="flex-1 bg-gray-100 rounded-full px-4 py-1 mx-2 outline-none text-sm" oninput="doSearch()">
     </div>
 
-    <div id="media-page">
+    <div id="media-page" class="hidden fixed inset-0 bg-white z-[4000] flex flex-col overflow-y-auto">
         <header class="h-14 border-b flex items-center px-4 bg-white sticky top-0"><i class="fas fa-arrow-left p-2 mr-4" onclick="toggleMediaPage(false)"></i><span class="font-bold">媒體庫</span></header>
         <div id="media-grid-container" class="grid grid-cols-3 gap-1 p-1"></div>
     </div>
+
+    <div id="scroll-to-bottom" onclick="scrollToEnd()"><i class="fas fa-chevron-down"></i></div>
 
     <div id="chat-content" class="chat-container p-4 flex flex-col no-scrollbar">
         <div id="msg-list" class="flex flex-col"></div>
@@ -102,19 +98,19 @@
     </div>
     
     <div id="msg-menu" class="text-sm">
-        <div id="menu-unsend" class="p-4 border-b text-red-500" onclick="executeUnsend()">撤回訊息</div>
-        <div class="p-4 text-blue-600" onclick="startReply()">回覆訊息</div>
+        <div id="menu-unsend" class="p-4 border-b text-red-500 font-medium" onclick="executeUnsend()"><i class="fas fa-undo mr-2"></i> 撤回訊息</div>
+        <div class="p-4 text-blue-600 font-medium" onclick="startReply()"><i class="fas fa-reply mr-2"></i> 回覆訊息</div>
     </div>
 
-    <div id="reply-preview" class="hidden p-3 bg-white border-l-4 border-green-500 mx-3 mb-2 rounded relative">
+    <div id="reply-preview" class="hidden p-3 bg-white border-l-4 border-green-500 mx-3 mb-2 rounded relative shadow-sm">
         <div id="reply-text" class="text-xs text-gray-400 truncate"></div>
         <i class="fas fa-times absolute right-2 top-2 text-gray-300" onclick="cancelReply()"></i>
     </div>
 
-    <div class="p-3 bg-white flex items-center gap-2 border-t z-30">
-        <label class="text-green-600 text-2xl px-1"><i class="fas fa-plus-circle"></i><input type="file" id="file-input" class="hidden" onchange="autoProcessFile(this)"></label>
+    <div class="p-3 bg-white flex items-center gap-2 border-t z-30 relative">
+        <label class="text-green-600 text-2xl px-1 cursor-pointer"><i class="fas fa-plus-circle"></i><input type="file" id="file-input" class="hidden" onchange="autoProcessFile(this)"></label>
         <input id="chat-input" class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm outline-none" placeholder="輸入訊息..." oninput="updateTypingStatus()">
-        <button onclick="sendMessage()" class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center"><i class="fas fa-paper-plane text-sm"></i></button>
+        <button onclick="sendMessage()" class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-transform"><i class="fas fa-paper-plane text-sm"></i></button>
     </div>
 
     <script>
@@ -124,36 +120,131 @@
         const urlParams = new URLSearchParams(window.location.search);
         let MY_NAME = urlParams.get('user') || "E", selectedMsg = null, replyTo = null, lastTap = 0, allMsgs = [], otherAvatar = "";
 
-        // --- 背景與檔案處理 ---
+        // --- 初始化背景 ---
         window.onload = () => {
             const b = localStorage.getItem('chat-bg'), o = localStorage.getItem('chat-bg-opacity') || "1";
             if(b) document.getElementById('chat-bg-layer').style.backgroundImage = `url(${b})`;
             document.getElementById('chat-bg-layer').style.opacity = o;
             document.getElementById('bg-opacity-slider').value = o;
         };
-        function applyBackground(i) { if(i.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('chat-bg-layer').style.backgroundImage=`url(${e.target.result})`; localStorage.setItem('chat-bg',e.target.result); }; r.readAsDataURL(i.files[0]); } }
-        function updateBgOpacity(v) { document.getElementById('chat-bg-layer').style.opacity=v; localStorage.setItem('chat-bg-opacity',v); }
-        function openBgSettings() { document.getElementById('bg-settings-modal').style.display='block'; document.getElementById('close-overlay').style.display='block'; }
 
-        // --- 改名與頭像 ---
+        // --- 名字與頭像設定 ---
         db.ref('notes/profile').on('value', s => { 
             const data = s.val() || {};
             document.getElementById('user-display').innerText = (data.name || "E ²") + " (" + MY_NAME + ")";
-            otherAvatar = data.avatar || "https://www.w3schools.com/howto/img_avatar.png";
+            otherAvatar = data.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
         });
         function editProfile() {
             const n = prompt("修改顯示名字：");
-            const a = prompt("輸入對方頭像連結 (URL)：");
-            if(n || a) db.ref('notes/profile').update({ name: n || "E ²", avatar: a || "" });
+            const a = prompt("輸入對方頭像 URL：");
+            if(n !== null || a !== null) db.ref('notes/profile').update({ name: n || "E ²", avatar: a || otherAvatar });
         }
 
-        // --- Sticker 處理 ---
-        function zoomImg(src) { 
-            const viewer = document.getElementById('photo-viewer');
-            document.getElementById('full-img').src = src;
-            document.getElementById('download-link').href = src;
-            viewer.style.display = 'flex'; 
+        // --- 功能控制 ---
+        function openBgSettings() { document.getElementById('bg-settings-modal').style.display='block'; document.getElementById('close-overlay').style.display='block'; }
+        function applyBackground(i) { if(i.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('chat-bg-layer').style.backgroundImage=`url(${e.target.result})`; localStorage.setItem('chat-bg',e.target.result); }; r.readAsDataURL(i.files[0]); } }
+        function updateBgOpacity(v) { document.getElementById('chat-bg-layer').style.opacity=v; localStorage.setItem('chat-bg-opacity',v); }
+        function closeAll() { document.getElementById('msg-menu').style.display='none'; document.getElementById('reaction-bar').style.display='none'; document.getElementById('close-overlay').style.display='none'; document.getElementById('bg-settings-modal').style.display='none'; }
+
+        // --- 核心訊息監聽 ---
+        db.ref('chats').on('value', snap => {
+            const list = document.getElementById('msg-list');
+            let html = "", lastD = ""; allMsgs = [];
+            snap.forEach(c => {
+                const m = c.val(); m.id = c.key; allMsgs.push(m);
+                const isMe = m.sender === MY_NAME, isS = m.type === 'sticker';
+                if (!isMe && !m.seen) db.ref('chats/'+c.key).update({seen:true});
+                
+                const d = new Date(m.timestamp).toLocaleDateString();
+                if(d !== lastD) { html += `<div class="date-divider"><span>${d}</span></div>`; lastD = d; }
+                
+                const content = isS ? `<img src="${m.data}" class="media-content" onclick="event.stopPropagation(); zoomImg('${m.data}')">` : `<span>${m.text}</span>`;
+                const reply = m.replyTo ? `<div class="text-[10px] opacity-40 border-l-2 border-green-500 pl-1 mb-1 truncate">${m.replyTo.text}</div>` : "";
+                const seen = isMe ? (m.seen ? '<i class="fas fa-check-double text-blue-400 ml-1"></i>' : '<i class="fas fa-check ml-1"></i>') : "";
+                const avatar = !isMe ? `<div class="avatar-box"><img src="${otherAvatar}"></div>` : "";
+
+                html += `
+                <div id="msg-${c.key}" class="msg-wrapper flex ${isMe?'justify-end':'justify-start'} mb-3 px-1" 
+                     onclick="handleMsgClick('${c.key}')" 
+                     ontouchstart="handleStart('${c.key}','${m.sender}','${encodeURIComponent(m.text||"")}', event)" 
+                     ontouchend="clearTimeout(window.lp)">
+                    ${avatar}
+                    <div class="flex flex-col ${isMe?'items-end':'items-start'}">
+                        <div class="flex ${isMe?'flex-row':'flex-row-reverse'} items-end gap-1">
+                            <span class="text-[9px] text-gray-400 mb-1">${new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+                            <div class="bubble ${isMe?'bubble-me':'bubble-other'} ${isS?'sticker-mode':''}">
+                                ${reply}${content}${m.reaction?`<div class="heart-react">${m.reaction}</div>`:""}
+                            </div>
+                        </div>
+                        <div class="text-[9px] h-3 mr-1">${seen}</div>
+                    </div>
+                </div>`;
+            });
+            list.innerHTML = html;
+            scrollToEnd();
+        });
+
+        // --- 互動功能 ---
+        function zoomImg(src) { document.getElementById('full-img').src=src; document.getElementById('download-link').href=src; document.getElementById('photo-viewer').style.display='flex'; }
+        function handleMsgClick(id) {
+            const now = Date.now();
+            if (now - lastTap < 300) { db.ref('chats/'+id).update({reaction:'❤️'}); if(navigator.vibrate) navigator.vibrate(50); }
+            lastTap = now;
         }
+        function handleStart(id, s, t, e) {
+            selectedMsg = {id, sender:s, text:decodeURIComponent(t)};
+            window.lp = setTimeout(() => {
+                const r = (e.touches) ? e.touches[0] : e;
+                document.getElementById('close-overlay').style.display = 'block';
+                const bar = document.getElementById('reaction-bar');
+                bar.style.display = 'block'; bar.style.top = (r.clientY - 110) + 'px'; bar.style.left = '50%'; bar.style.transform = 'translateX(-50%)';
+                const menu = document.getElementById('msg-menu');
+                menu.style.display = 'block'; menu.style.top = (r.clientY + 10) + 'px'; menu.style.left = (r.clientX > 200 ? r.clientX-150 : r.clientX) + 'px';
+                document.getElementById('menu-unsend').style.display = (s===MY_NAME)?'block':'none';
+                if(navigator.vibrate) navigator.vibrate(40);
+            }, 600);
+        }
+
+        // --- 工具功能 ---
+        const chatBox = document.getElementById('chat-content');
+        function scrollToEnd() { chatBox.scrollTop = chatBox.scrollHeight; }
+        chatBox.addEventListener('scroll', () => { document.getElementById('scroll-to-bottom').style.display = (chatBox.scrollTop < chatBox.scrollHeight - 800) ? 'flex' : 'none'; });
+
+        function toggleSearch(s) { document.getElementById('search-bar').style.display=s?'flex':'none'; if(!s) { document.querySelectorAll('.msg-wrapper').forEach(w=>w.style.display='flex'); document.getElementById('search-input').value=""; } }
+        function doSearch() { 
+            const v = document.getElementById('search-input').value.toLowerCase();
+            document.querySelectorAll('.msg-wrapper').forEach(w => {
+                const text = w.innerText.toLowerCase();
+                w.style.display = text.includes(v) ? 'flex' : 'none';
+            });
+        }
+
+        function toggleMediaPage(s) { 
+            const p = document.getElementById('media-page');
+            p.style.display = s ? 'flex' : 'none';
+            if(s) {
+                const g = document.getElementById('media-grid-container');
+                g.innerHTML = "";
+                allMsgs.filter(m=>m.type==='sticker').reverse().forEach(m => {
+                    g.innerHTML += `<img src="${m.data}" class="aspect-square object-cover w-full" onclick="zoomImg('${m.data}')">`;
+                });
+            }
+        }
+
+        function sendMessage() {
+            const i = document.getElementById('chat-input');
+            if(i.value.trim() || replyTo) {
+                db.ref('chats').push({ type:'text', text:i.value, sender:MY_NAME, timestamp:Date.now(), seen:false, replyTo:replyTo });
+                i.value = ""; cancelReply(); db.ref('typing/'+MY_NAME).set(false);
+            }
+        }
+        function startReply() { replyTo={text:selectedMsg.text||"[圖片]"}; document.getElementById('reply-preview').style.display='block'; document.getElementById('reply-text').innerText=replyTo.text; closeAll(); }
+        function cancelReply() { replyTo=null; document.getElementById('reply-preview').style.display='none'; }
+        function addReact(emo) { if(selectedMsg) db.ref('chats/'+selectedMsg.id).update({reaction:emo}); closeAll(); }
+        function customReact() { const emo = prompt("輸入 Emoji："); if(emo) addReact(emo); }
+        function executeUnsend() { if(selectedMsg) db.ref('chats/'+selectedMsg.id).remove(); closeAll(); }
+        function clearAllHistory() { if(confirm("確定清空所有對話紀錄？")) db.ref().remove(); }
+
         function autoProcessFile(input) {
             if (input.files && input.files[0]) {
                 const r = new FileReader();
@@ -174,78 +265,11 @@
             }
         }
 
-        // --- 訊息核心監聽 ---
-        db.ref('chats').on('value', snap => {
-            const list = document.getElementById('msg-list');
-            let html = "", lastD = ""; allMsgs = [];
-            snap.forEach(c => {
-                const m = c.val(); m.id = c.key; allMsgs.push(m);
-                const isMe = m.sender === MY_NAME, isS = m.type === 'sticker';
-                if (!isMe && !m.seen) db.ref('chats/'+c.key).update({seen:true});
-                
-                const d = new Date(m.timestamp).toLocaleDateString();
-                if(d !== lastD) { html += `<div class="date-divider"><span>${d}</span></div>`; lastD = d; }
-                
-                const content = isS ? `<img src="${m.data}" class="media-content" onclick="event.stopPropagation(); zoomImg('${m.data}')">` : `<span>${m.text}</span>`;
-                const reply = m.replyTo ? `<div class="text-[10px] opacity-40 border-l-2 border-green-500 pl-1 mb-1">${m.replyTo.text}</div>` : "";
-                const seen = isMe ? (m.seen ? '<i class="fas fa-check-double text-blue-400 ml-1"></i>' : '<i class="fas fa-check ml-1"></i>') : "";
-                
-                // 頭像 HTML
-                const avatarHtml = !isMe ? `<div class="avatar-box"><img src="${otherAvatar}"></div>` : "";
-
-                html += `
-                    <div id="msg-${c.key}" class="msg-wrapper flex ${isMe?'justify-end':'justify-start'} mb-3 px-2" 
-                         onclick="handleMsgClick('${c.key}')" 
-                         ontouchstart="handleStart('${c.key}','${m.sender}','${encodeURIComponent(m.text||"")}', event)" 
-                         ontouchend="clearTimeout(window.lp)">
-                        ${avatarHtml}
-                        <div class="flex flex-col ${isMe?'items-end':'items-start'}">
-                            <div class="flex ${isMe?'flex-row':'flex-row-reverse'} items-end gap-1">
-                                <span class="text-[9px] text-gray-400">${new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
-                                <div class="bubble ${isMe?'bubble-me':'bubble-other'} ${isS?'sticker-mode':''}">
-                                    ${reply}${content}${m.reaction?`<div class="heart-react">${m.reaction}</div>`:""}
-                                </div>
-                            </div>
-                            <div class="text-[9px] h-3">${seen}</div>
-                        </div>
-                    </div>`;
-            });
-            list.innerHTML = html;
-            document.getElementById('chat-content').scrollTop = document.getElementById('chat-content').scrollHeight;
-        });
-
-        // --- 交互邏輯 ---
-        function handleMsgClick(id) {
-            const now = Date.now();
-            if (now - lastTap < 300) { db.ref('chats/'+id).update({reaction:'❤️'}); if(navigator.vibrate) navigator.vibrate(50); }
-            lastTap = now;
-        }
-        function handleStart(id, s, t, e) {
-            selectedMsg = {id, sender:s, text:decodeURIComponent(t)};
-            window.lp = setTimeout(() => {
-                const r = (e.touches) ? e.touches[0] : e;
-                document.getElementById('close-overlay').style.display = 'block';
-                const bar = document.getElementById('reaction-bar');
-                bar.style.display = 'block'; bar.style.top = (r.clientY - 110) + 'px'; bar.style.left = '50%'; bar.style.transform = 'translateX(-50%)';
-                const menu = document.getElementById('msg-menu');
-                menu.style.display = 'block'; menu.style.top = (r.clientY + 10) + 'px'; menu.style.left = (r.clientX-50) + 'px';
-                document.getElementById('menu-unsend').style.display = (s===MY_NAME)?'block':'none';
-                if(navigator.vibrate) navigator.vibrate(40);
-            }, 600);
-        }
-        function closeAll() { document.getElementById('msg-menu').style.display='none'; document.getElementById('reaction-bar').style.display='none'; document.getElementById('close-overlay').style.display='none'; document.getElementById('bg-settings-modal').style.display='none'; }
-        function addReact(emo) { if(selectedMsg) db.ref('chats/'+selectedMsg.id).update({reaction:emo}); closeAll(); }
-        function customReact() { const emo = prompt("輸入 Emoji："); if(emo) addReact(emo); }
-        function executeUnsend() { if(selectedMsg) db.ref('chats/'+selectedMsg.id).remove(); closeAll(); }
-        function startReply() { replyTo={text:selectedMsg.text}; document.getElementById('reply-preview').style.display='block'; document.getElementById('reply-text').innerText=replyTo.text; closeAll(); }
-        function cancelReply() { replyTo=null; document.getElementById('reply-preview').style.display='none'; }
-        function sendMessage() { const i=document.getElementById('chat-input'); if(i.value.trim()||replyTo){ db.ref('chats').push({type:'text',text:i.value,sender:MY_NAME,timestamp:Date.now(),seen:false,replyTo:replyTo}); i.value=""; cancelReply(); db.ref('typing/'+MY_NAME).set(false); } }
-        function toggleSearch(s) { document.getElementById('search-bar').style.display=s?'flex':'none'; }
-        function doSearch() { const v=document.getElementById('search-input').value.toLowerCase(); document.querySelectorAll('.msg-wrapper').forEach(w=>{ w.style.display=w.innerText.toLowerCase().includes(v)?'flex':'none'; }); }
-        function toggleMediaPage(s) { document.getElementById('media-page').style.display=s?'flex':'none'; if(s){ const g=document.getElementById('media-grid-container'); g.innerHTML=""; allMsgs.filter(m=>m.type==='sticker').reverse().forEach(m=>g.innerHTML+=`<img src="${m.data}" class="aspect-square object-cover w-full" onclick="zoomImg('${m.data}')">`); } }
-        function clearAllHistory() { if(confirm("確定清空紀錄？")) db.ref().remove(); }
         function updateTypingStatus() { db.ref('typing/'+MY_NAME).set(true); clearTimeout(window.tT); window.tT=setTimeout(()=>db.ref('typing/'+MY_NAME).set(false),2000); }
-        db.ref('typing').on('value', snap => { let s=false; for(let u in snap.val()){ if(u!==MY_NAME && snap.val()[u]){ document.getElementById('typing-name').innerText=u; s=true; break; } } document.getElementById('typing-box').style.display=s?'block':'none'; });
+        db.ref('typing').on('value', snap => {
+            let s=false; for(let u in snap.val()){ if(u!==MY_NAME && snap.val()[u]){ document.getElementById('typing-name').innerText=u; s=true; break; } }
+            document.getElementById('typing-box').style.display=s?'block':'none';
+        });
     </script>
 </body>
 </html>
