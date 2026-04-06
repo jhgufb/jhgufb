@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
+        /* 基礎設定：禁止選取文字，但 input 除外 */
         * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
         input, textarea { -webkit-user-select: text; user-select: text; font-size: 16px !important; }
         body { font-family: -apple-system, sans-serif; overflow: hidden; background: #f0f2f5; }
@@ -22,7 +23,7 @@
         .bubble-other { background-color: #ffffff; border-radius: 0 12px 12px 12px; align-self: flex-start; }
         .sticker-mode { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
         
-        /* 修改圖片 CSS 使其可被長撳選取 */
+        /* 關鍵：圖片必須允許 user-select 才能彈出下載選單 */
         .media-content { 
             max-width: 180px; border-radius: 8px; display: block; cursor: pointer; 
             pointer-events: auto !important; 
@@ -34,20 +35,27 @@
         .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
 
         #close-overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: transparent; }
-        #reaction-bar { display: none; position: fixed; z-index: 3000; background: white; border-radius: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 280px; padding: 10px; white-space: nowrap; }
+        
+        /* Reaction Bar 修正：置中顯示 */
+        #reaction-bar { 
+            display: none; position: fixed; z-index: 3000; background: white; 
+            border-radius: 30px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); 
+            width: 300px; padding: 10px; align-items: center; justify-content: space-around;
+        }
+        #reaction-bar span { font-size: 24px; cursor: pointer; }
+        
         #msg-menu { display: none; position: fixed; z-index: 3000; background: white; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); min-width: 160px; }
         
         #photo-viewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9000; align-items: center; justify-content: center; }
-        
-        /* 大圖模式亦需開啟長撳功能 */
         #full-img { 
+            max-width: 95%; max-height: 85%; object-fit: contain;
             -webkit-user-select: auto !important; user-select: auto !important; 
             pointer-events: auto !important; 
         }
 
         #media-page { display: none; position: fixed; inset: 0; background: white; z-index: 8000; flex-direction: column; }
-
         #scroll-to-bottom { display: none; position: fixed; bottom: 85px; right: 20px; width: 42px; height: 42px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; align-items: center; justify-content: center; cursor: pointer; color: #999; }
+        
         .date-divider { text-align: center; margin: 15px 0; width: 100%; }
         .date-divider span { background: rgba(0,0,0,0.15); color: white; padding: 2px 12px; border-radius: 10px; font-size: 11px; }
         .heart-react { position: absolute; bottom: -8px; right: 5px; background: white; border-radius: 10px; padding: 1px 5px; font-size: 11px; border: 1px solid #eee; }
@@ -80,10 +88,7 @@
     </div>
 
     <div id="media-page">
-        <header class="h-14 border-b flex items-center px-4 bg-white sticky top-0">
-            <i class="fas fa-arrow-left p-2 mr-4" onclick="toggleMediaPage(false)"></i>
-            <span class="font-bold">圖片庫</span>
-        </header>
+        <header class="h-14 border-b flex items-center px-4 bg-white sticky top-0"><i class="fas fa-arrow-left p-2 mr-4" onclick="toggleMediaPage(false)"></i><span class="font-bold">圖片庫</span></header>
         <div id="media-grid" class="grid grid-cols-3 gap-1 p-1 overflow-y-auto flex-1"></div>
     </div>
 
@@ -94,9 +99,11 @@
 
     <div id="scroll-to-bottom" onclick="scrollToEnd()"><i class="fas fa-chevron-down"></i></div>
 
-    <div id="reaction-bar" class="no-scrollbar">
+    <div id="reaction-bar" class="flex">
         <span onclick="addReact('❤️')">❤️</span><span onclick="addReact('😂')">😂</span><span onclick="addReact('😮')">😮</span><span onclick="addReact('😢')">😢</span><span onclick="addReact('👍')">👍</span>
+        <span onclick="customReact()" class="text-gray-300 ml-1"><i class="fas fa-plus-circle"></i></span>
     </div>
+
     <div id="msg-menu" class="text-sm">
         <div id="menu-unsend" class="p-4 border-b text-red-500 font-medium" onclick="executeUnsend()">撤回</div>
         <div class="p-4 text-blue-600 font-medium" onclick="startReply()">回覆</div>
@@ -114,13 +121,13 @@
     </div>
 
     <div id="photo-viewer" onclick="this.style.display='none'">
-        <img id="full-img" src="" class="max-w-[95%] max-h-[80%] object-contain" onclick="event.stopPropagation()">
+        <img id="full-img" src="" onclick="event.stopPropagation()">
     </div>
 
     <div id="profile-modal">
         <h3 class="font-bold mb-4 text-center">設置資料</h3>
         <input id="profile-name-input" type="text" placeholder="顯示名字" class="w-full border rounded-lg p-2 mb-4 text-sm outline-none">
-        <button class="w-full bg-blue-500 text-white py-2 rounded-lg mb-4 text-sm" onclick="document.getElementById('avatar-input').click()">從相簿選取對方頭像</button>
+        <button class="w-full bg-blue-500 text-white py-2 rounded-lg mb-4 text-sm" onclick="document.getElementById('avatar-input').click()">選取對方頭像</button>
         <input type="file" id="avatar-input" class="hidden" accept="image/*" onchange="processAvatar(this)">
         <div id="avatar-preview-box" class="flex justify-center mb-4 hidden"><img id="avatar-preview-img" src="" class="w-16 h-16 rounded-lg object-cover border"></div>
         <button class="w-full mt-2 bg-green-600 text-white py-2 rounded-lg font-bold" onclick="saveProfile()">儲存</button>
@@ -149,21 +156,9 @@
             document.getElementById('bg-opacity-slider').value = o;
         };
 
-        function scrollToOriginal(id) {
-            const el = document.getElementById('msg-' + id);
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                const bubble = el.querySelector('.bubble');
-                bubble.classList.add('highlight-flash');
-                setTimeout(() => bubble.classList.remove('highlight-flash'), 2000);
-            }
-        }
-
-        const chatBox = document.getElementById('chat-content');
-        chatBox.addEventListener('scroll', () => {
-            document.getElementById('scroll-to-bottom').style.display = (chatBox.scrollTop < chatBox.scrollHeight - 800) ? 'flex' : 'none';
-        });
         function scrollToEnd() { chatBox.scrollTop = chatBox.scrollHeight; }
+        const chatBox = document.getElementById('chat-content');
+        chatBox.addEventListener('scroll', () => { document.getElementById('scroll-to-bottom').style.display = (chatBox.scrollTop < chatBox.scrollHeight - 800) ? 'flex' : 'none'; });
 
         db.ref('notes/profile').on('value', s => { 
             const data = s.val() || {};
@@ -187,29 +182,14 @@
                 const avatar = !isMe ? `<div class="avatar-box"><img src="${otherAvatar}"></div>` : "";
                 const seenIcon = isMe ? (m.seen ? '<i class="fas fa-check-double text-blue-400 ml-1"></i>' : '<i class="fas fa-check text-gray-300 ml-1"></i>') : "";
 
-                html += `
-                <div id="msg-${c.key}" class="msg-wrapper flex ${isMe?'justify-end':'justify-start'} mb-3 px-1" 
-                     onclick="handleMsgClick('${c.key}')" 
-                     ontouchstart="handleStart('${c.key}','${m.sender}','${encodeURIComponent(m.text||"")}', event)" 
-                     ontouchend="clearTimeout(window.lp)">
-                    ${avatar}
-                    <div class="flex flex-col ${isMe?'items-end':'items-start'}">
-                        <div class="flex ${isMe?'flex-row':'flex-row-reverse'} items-end gap-1">
-                            <span class="text-[9px] text-gray-400 mb-1">${new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
-                            <div class="bubble ${isMe?'bubble-me':'bubble-other'} ${m.type==='sticker'?'sticker-mode':''}">
-                                ${reply}${content}${m.reaction?`<div class="heart-react">${m.reaction}</div>`:""}
-                            </div>
-                        </div>
-                        <div class="text-[9px] leading-none h-2 mt-0.5">${seenIcon}</div>
-                    </div>
-                </div>`;
+                html += `<div id="msg-${c.key}" class="msg-wrapper flex ${isMe?'justify-end':'justify-start'} mb-3 px-1" onclick="handleMsgClick('${c.key}')" ontouchstart="handleStart('${c.key}','${m.sender}','${encodeURIComponent(m.text||"")}', event)" ontouchend="clearTimeout(window.lp)">${avatar}<div class="flex flex-col ${isMe?'items-end':'items-start'}"><div class="flex ${isMe?'flex-row':'flex-row-reverse'} items-end gap-1"><span class="text-[9px] text-gray-400 mb-1">${new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span><div class="bubble ${isMe?'bubble-me':'bubble-other'} ${m.type==='sticker'?'sticker-mode':''}">${reply}${content}${m.reaction?`<div class="heart-react">${m.reaction}</div>`:""}</div></div><div class="text-[9px] leading-none h-2 mt-0.5">${seenIcon}</div></div></div>`;
             });
             list.innerHTML = html;
             scrollToEnd();
         });
 
         function handleStart(id, s, t, e) {
-            // 如果長撳嘅對象係 IMG，直接 return，等手機原生功能處理（下載選單）
+            // 重要：如果是圖片，不要彈出自製 Menu，這樣手機系統才會彈出下載選單
             if (e.target.tagName === 'IMG') return;
 
             selectedMsg = {id, sender:s, text:decodeURIComponent(t)};
@@ -217,40 +197,20 @@
                 const r = e.touches[0];
                 document.getElementById('close-overlay').style.display = 'block';
                 const bar = document.getElementById('reaction-bar'), menu = document.getElementById('msg-menu');
-                bar.style.display = 'block'; bar.style.top = (r.clientY - 110) + 'px'; bar.style.left = '50%'; bar.style.transform = 'translateX(-50%)';
+                bar.style.display = 'flex'; bar.style.top = (r.clientY - 110) + 'px'; bar.style.left = '50%'; bar.style.transform = 'translateX(-50%)';
                 menu.style.display = 'block'; menu.style.top = (r.clientY + 10) + 'px'; menu.style.left = (r.clientX > 200 ? r.clientX - 140 : r.clientX) + 'px';
                 document.getElementById('menu-unsend').style.display = (s===MY_NAME)?'block':'none';
                 if(navigator.vibrate) navigator.vibrate(50);
             }, 600);
         }
 
-        function sendMessage() {
-            const i = document.getElementById('chat-input');
-            if(i.value.trim() || replyTo) {
-                db.ref('chats').push({ type:'text', text:i.value, sender:MY_NAME, timestamp:Date.now(), seen:false, replyTo:replyTo });
-                i.value = ""; cancelReply(); db.ref('typing/'+MY_NAME).set(false);
-            }
-        }
-
-        function toggleMediaPage(show) {
-            const page = document.getElementById('media-page');
-            page.style.display = show ? 'flex' : 'none';
-            if (show) {
-                const grid = document.getElementById('media-grid'); grid.innerHTML = "";
-                allMessages.filter(m => m.type === 'sticker').reverse().forEach(m => {
-                    grid.innerHTML += `<img src="${m.data}" class="aspect-square object-cover w-full cursor-pointer" onclick="zoomImg('${m.data}')">`;
-                });
-            }
-        }
-
+        function customReact() { const emo = prompt("請輸入 Emoji："); if(emo) addReact(emo); }
+        function sendMessage() { const i = document.getElementById('chat-input'); if(i.value.trim() || replyTo) { db.ref('chats').push({ type:'text', text:i.value, sender:MY_NAME, timestamp:Date.now(), seen:false, replyTo:replyTo }); i.value = ""; cancelReply(); db.ref('typing/'+MY_NAME).set(false); } }
+        function toggleMediaPage(show) { const page = document.getElementById('media-page'); page.style.display = show ? 'flex' : 'none'; if (show) { const grid = document.getElementById('media-grid'); grid.innerHTML = ""; allMessages.filter(m => m.type === 'sticker').reverse().forEach(m => { grid.innerHTML += `<img src="${m.data}" class="aspect-square object-cover w-full cursor-pointer" onclick="zoomImg('${m.data}')">`; }); } }
         function toggleSearch(show) { document.getElementById('search-bar').classList.toggle('hidden', !show); if (!show) clearSearch(); }
         function clearSearch() { document.getElementById('search-input').value = ""; doSearch(); }
-        function doSearch() {
-            const val = document.getElementById('search-input').value.toLowerCase();
-            document.querySelectorAll('.msg-wrapper').forEach(w => { w.style.display = w.innerText.toLowerCase().includes(val) ? 'flex' : 'none'; });
-        }
-
-        function clearAllHistory() { if (confirm("⚠️ 注意：呢個動作會清空所有對話紀錄，確定要繼續？")) db.ref('chats').remove(); }
+        function doSearch() { const val = document.getElementById('search-input').value.toLowerCase(); document.querySelectorAll('.msg-wrapper').forEach(w => { w.style.display = w.innerText.toLowerCase().includes(val) ? 'flex' : 'none'; }); }
+        function clearAllHistory() { if (confirm("⚠️ 確定清空紀錄？")) db.ref('chats').remove(); }
         function startReply() { replyTo={id:selectedMsg.id, text:selectedMsg.text||"[圖片]"}; document.getElementById('reply-preview').style.display='block'; document.getElementById('reply-text').innerText=replyTo.text; closeAll(); }
         function cancelReply() { replyTo=null; document.getElementById('reply-preview').style.display='none'; }
         function addReact(emo) { if(selectedMsg) db.ref('chats/'+selectedMsg.id).update({reaction:emo}); closeAll(); }
@@ -261,55 +221,13 @@
         function zoomImg(s) { document.getElementById('full-img').src=s; document.getElementById('photo-viewer').style.display='flex'; }
         function applyBackground(i) { if(i.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('chat-bg-layer').style.backgroundImage=`url(${e.target.result})`; localStorage.setItem('chat-bg',e.target.result); }; r.readAsDataURL(i.files[0]); } }
         function updateBgOpacity(v) { document.getElementById('chat-bg-layer').style.opacity=v; localStorage.setItem('chat-bg-opacity',v); }
-        
-        function processAvatar(input) {
-            if (input.files[0]) {
-                const r = new FileReader();
-                r.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const cvs = document.createElement('canvas'); cvs.width = 200; cvs.height = 200;
-                        const min = Math.min(img.width, img.height);
-                        cvs.getContext('2d').drawImage(img, (img.width-min)/2, (img.height-min)/2, min, min, 0, 0, 200, 200);
-                        tempAvatarBase64 = cvs.toDataURL('image/jpeg', 0.8);
-                        document.getElementById('avatar-preview-box').classList.remove('hidden');
-                        document.getElementById('avatar-preview-img').src = tempAvatarBase64;
-                    };
-                    img.src = e.target.result;
-                };
-                r.readAsDataURL(input.files[0]);
-            }
-        }
-        function saveProfile() {
-            const updates = { name: document.getElementById('profile-name-input').value || "E ²" };
-            if (tempAvatarBase64) updates.avatar = tempAvatarBase64;
-            db.ref('notes/profile').update(updates); closeAll();
-        }
-        function autoProcessFile(input) {
-            if (input.files[0]) {
-                const r = new FileReader();
-                r.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const cvs = document.createElement('canvas');
-                        let w = img.width, h = img.height, max = 800;
-                        if (w > h) { if (w > max) { h *= max/w; w = max; } } else { if (h > max) { w *= max/h; h = max; } }
-                        cvs.width = w; cvs.height = h;
-                        cvs.getContext('2d').drawImage(img, 0, 0, w, h);
-                        db.ref('chats').push({ type:'sticker', data: cvs.toDataURL('image/jpeg', 0.6), sender:MY_NAME, timestamp:Date.now(), seen:false });
-                        input.value = "";
-                    };
-                    img.src = e.target.result;
-                };
-                r.readAsDataURL(input.files[0]);
-            }
-        }
+        function scrollToOriginal(id) { const el = document.getElementById('msg-' + id); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); const bubble = el.querySelector('.bubble'); bubble.classList.add('highlight-flash'); setTimeout(() => bubble.classList.remove('highlight-flash'), 2000); } }
         function handleMsgClick(id) { const now = Date.now(); if (now - lastTap < 300) { db.ref('chats/'+id).update({reaction:'❤️'}); } lastTap = now; }
         function updateTypingStatus() { db.ref('typing/'+MY_NAME).set(true); setTimeout(()=>db.ref('typing/'+MY_NAME).set(false),2000); }
-        db.ref('typing').on('value', snap => {
-            let s=false; for(let u in snap.val()){ if(u!==MY_NAME && snap.val()[u]){ s=true; break; } }
-            document.getElementById('typing-box').style.display=s?'block':'none';
-        });
+        db.ref('typing').on('value', snap => { let s=false; for(let u in snap.val()){ if(u!==MY_NAME && snap.val()[u]){ s=true; break; } } document.getElementById('typing-box').style.display=s?'block':'none'; });
+        function processAvatar(input) { if (input.files[0]) { const r = new FileReader(); r.onload = (e) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); cvs.width = 200; cvs.height = 200; const min = Math.min(img.width, img.height); cvs.getContext('2d').drawImage(img, (img.width-min)/2, (img.height-min)/2, min, min, 0, 0, 200, 200); tempAvatarBase64 = cvs.toDataURL('image/jpeg', 0.8); document.getElementById('avatar-preview-box').classList.remove('hidden'); document.getElementById('avatar-preview-img').src = tempAvatarBase64; }; img.src = e.target.result; }; r.readAsDataURL(input.files[0]); } }
+        function saveProfile() { const updates = { name: document.getElementById('profile-name-input').value || "E ²" }; if (tempAvatarBase64) updates.avatar = tempAvatarBase64; db.ref('notes/profile').update(updates); closeAll(); }
+        function autoProcessFile(input) { if (input.files[0]) { const r = new FileReader(); r.onload = (e) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); let w = img.width, h = img.height, max = 800; if (w > h) { if (w > max) { h *= max/w; w = max; } } else { if (h > max) { w *= max/h; h = max; } } cvs.width = w; cvs.height = h; cvs.getContext('2d').drawImage(img, 0, 0, w, h); db.ref('chats').push({ type:'sticker', data: cvs.toDataURL('image/jpeg', 0.6), sender:MY_NAME, timestamp:Date.now(), seen:false, replyTo:replyTo }); input.value = ""; cancelReply(); }; img.src = e.target.result; }; r.readAsDataURL(input.files[0]); } }
     </script>
 </body>
 </html>
