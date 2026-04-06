@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
-        /* 防止 iOS 長按彈出系統選單或框選藍色塊 */
+        /* 全域禁止選取與長按選單，防止出現藍色框 */
         * {
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
@@ -17,16 +17,16 @@
             user-select: none;
         }
 
-        /* 輸入框要可以打字，所以要開返 Select */
+        /* 允許打字位選取文字 */
         input, textarea {
             -webkit-user-select: text;
             user-select: text;
-            font-size: 16px !important; /* 防止 iOS 聚焦時自動 Zoom In */
+            font-size: 16px !important;
         }
 
         body { 
             background-color: #efe7dd; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            font-family: -apple-system, sans-serif; 
             overflow: hidden; 
             touch-action: manipulation; 
         }
@@ -36,7 +36,6 @@
         .bubble { 
             max-width: 85%; padding: 8px 12px; font-size: 15px; 
             box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; 
-            transition: transform 0.1s;
         }
         
         .bubble-me { background-color: #dcf8c6; border-radius: 12px 12px 0 12px; align-self: flex-end; }
@@ -45,6 +44,7 @@
         .sticker-mode { background: transparent !important; box-shadow: none !important; padding: 0 !important; border: none !important; }
         .media-content { max-width: 180px; border-radius: 8px; display: block; margin: 4px 0; cursor: pointer; }
 
+        /* Reaction & Menu */
         #reaction-bar, #msg-menu { 
             display: none; position: fixed; z-index: 500; background: white; 
             border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); 
@@ -53,50 +53,43 @@
 
         .date-divider { text-align: center; margin: 20px 0; }
         .date-divider span { background: rgba(0,0,0,0.2); color: white; padding: 3px 12px; border-radius: 10px; font-size: 11px; }
-        
-        .heart-react { 
-            position: absolute; bottom: -8px; right: 5px; background: white; 
-            border-radius: 10px; padding: 1px 5px; font-size: 12px; 
-            border: 1px solid #eee; z-index: 10; 
-        }
+        .heart-react { position: absolute; bottom: -8px; right: 5px; background: white; border-radius: 10px; padding: 1px 5px; font-size: 12px; border: 1px solid #eee; z-index: 10; }
 
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 400; display: none; }
-
-        #search-bar { 
-            display: none; position: absolute; top: 0; left: 0; width: 100%; 
-            height: 56px; background: white; z-index: 100; align-items: center; 
-            padding: 0 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-        }
-
+        /* 全屏睇相：特別允許長按 Save 相 */
         #photo-viewer { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; 
         }
-        #photo-viewer img { max-width: 95%; max-height: 90%; object-fit: contain; }
+        #photo-viewer img { 
+            max-width: 95%; max-height: 90%; object-fit: contain; 
+            /* 關鍵：允許長按彈出 Save 相選單 */
+            -webkit-touch-callout: default !important;
+            -webkit-user-select: auto !important;
+            user-select: auto !important;
+        }
 
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 400; display: none; }
+        #search-bar { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 56px; background: white; z-index: 100; align-items: center; padding: 0 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         #media-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; overflow-y: auto; }
         .media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; }
-        .media-grid img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #f0f0f0; cursor: pointer; }
+        .media-grid img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #f0f0f0; cursor: pointer; -webkit-touch-callout: default; }
 
-        #scroll-to-bottom { 
-            display: none; position: fixed; bottom: 85px; right: 20px; 
-            width: 40px; height: 40px; background: white; color: #555; 
-            border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.15); 
-            z-index: 300; align-items: center; justify-content: center; 
-            cursor: pointer; transition: all 0.3s; 
-        }
+        #scroll-to-bottom { display: none; position: fixed; bottom: 85px; right: 20px; width: 40px; height: 40px; background: white; color: #555; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.15); z-index: 300; align-items: center; justify-content: center; cursor: pointer; }
     </style>
 </head>
 <body class="flex flex-col h-screen max-w-md mx-auto bg-white border-x">
 
     <div id="close-overlay" class="overlay" onclick="closeAll()"></div>
-    <div id="photo-viewer" onclick="this.style.display='none'"><img id="full-img" src=""></div>
+    
+    <div id="photo-viewer" onclick="if(event.target === this) this.style.display='none'">
+        <img id="full-img" src="" ontouchstart="event.stopPropagation()">
+        <i class="fas fa-times text-white absolute top-6 right-6 text-2xl p-2" onclick="document.getElementById('photo-viewer').style.display='none'"></i>
+    </div>
 
     <div id="search-bar">
         <i class="fas fa-arrow-left text-gray-500 cursor-pointer p-2" onclick="toggleSearch(false)"></i>
         <input id="search-input" type="text" placeholder="搜尋訊息..." class="flex-1 mx-2 outline-none text-sm" oninput="doSearch()">
-        <i class="fas fa-times text-gray-500 cursor-pointer p-2" onclick="clearSearch()"></i>
     </div>
 
     <div id="media-page">
@@ -108,56 +101,38 @@
     </div>
 
     <div id="reaction-bar" class="p-2 flex gap-2 items-center justify-center">
-        <span class="cursor-pointer text-2xl" onclick="addReact('❤️')">❤️</span>
-        <span class="cursor-pointer text-2xl" onclick="addReact('😂')">😂</span>
-        <span class="cursor-pointer text-2xl" onclick="addReact('😮')">😮</span>
-        <span class="cursor-pointer text-2xl" onclick="addReact('😢')">😢</span>
-        <span class="cursor-pointer text-2xl" onclick="addReact('👍')">👍</span>
+        <span onclick="addReact('❤️')">❤️</span><span onclick="addReact('😂')">😂</span><span onclick="addReact('😮')">😮</span><span onclick="addReact('😢')">😢</span><span onclick="addReact('👍')">👍</span>
         <div class="w-[1px] h-6 bg-gray-200 mx-1"></div>
-        <button onclick="openEmojiPicker()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-            <i class="fas fa-plus text-sm"></i>
-        </button>
+        <button onclick="openEmojiPicker()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><i class="fas fa-plus text-sm"></i></button>
         <input type="text" id="emoji-trigger" class="absolute opacity-0 w-0 h-0" oninput="handleCustomEmoji(this)">
     </div>
 
     <div id="msg-menu">
-        <div id="menu-unsend" class="p-4 text-red-500 font-bold border-b active:bg-gray-100 cursor-pointer flex items-center gap-3" onclick="executeUnsend()">
-            <i class="fas fa-undo"></i> 撤回
-        </div>
-        <div class="p-4 text-blue-600 active:bg-gray-100 cursor-pointer flex items-center gap-3" onclick="startReply()">
-            <i class="fas fa-reply"></i> 回覆
-        </div>
+        <div id="menu-unsend" class="p-4 text-red-500 font-bold border-b" onclick="executeUnsend()"><i class="fas fa-undo"></i> 撤回</div>
+        <div class="p-4 text-blue-600" onclick="startReply()"><i class="fas fa-reply"></i> 回覆</div>
     </div>
 
     <header class="h-14 border-b flex items-center justify-between px-4 bg-white z-20">
-        <div class="flex items-center gap-2">
-            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-            <span id="user-display" class="font-bold text-sm text-gray-700">E ²</span>
-        </div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 bg-green-500 rounded-full"></span><span id="user-display" class="font-bold text-sm text-gray-700">E ²</span></div>
         <div class="flex gap-1">
-            <i class="fas fa-images text-gray-400 cursor-pointer p-2 hover:bg-gray-100 rounded-full" onclick="toggleMediaPage(true)"></i>
-            <i class="fas fa-search text-gray-400 cursor-pointer p-2 hover:bg-gray-100 rounded-full" onclick="toggleSearch(true)"></i>
-            <i class="fas fa-trash-alt text-red-200 cursor-pointer p-2 hover:bg-red-50 rounded-full" onclick="clearAllHistory()"></i>
+            <i class="fas fa-images text-gray-400 p-2" onclick="toggleMediaPage(true)"></i>
+            <i class="fas fa-search text-gray-400 p-2" onclick="toggleSearch(true)"></i>
+            <i class="fas fa-trash-alt text-red-200 p-2" onclick="clearAllHistory()"></i>
         </div>
     </header>
 
     <div id="scroll-to-bottom" onclick="scrollToEnd()"><i class="fas fa-chevron-down"></i></div>
     <div id="chat-content" class="chat-container overflow-y-auto p-4 flex flex-col no-scrollbar"></div>
 
-    <div id="reply-preview" class="hidden p-3 bg-gray-100 border-l-4 border-green-500 relative mx-2 mb-2 rounded shadow-sm">
+    <div id="reply-preview" class="hidden p-3 bg-gray-100 border-l-4 border-green-500 relative mx-2 mb-2 rounded">
         <div id="reply-text" class="text-xs text-gray-600 truncate"></div>
-        <i class="fas fa-times absolute right-2 top-2 text-gray-400 p-1 cursor-pointer" onclick="cancelReply()"></i>
+        <i class="fas fa-times absolute right-2 top-2 text-gray-400 p-1" onclick="cancelReply()"></i>
     </div>
 
     <div class="p-3 bg-[#f0f2f5] flex items-center gap-2 border-t">
-        <label class="text-green-600 text-2xl px-1 cursor-pointer">
-            <i class="fas fa-plus-circle"></i>
-            <input type="file" id="file-input" class="hidden" accept="image/*" onchange="autoProcessFile(this)">
-        </label>
+        <label class="text-green-600 text-2xl px-1 cursor-pointer"><i class="fas fa-plus-circle"></i><input type="file" id="file-input" class="hidden" accept="image/*" onchange="autoProcessFile(this)"></label>
         <input id="chat-input" class="flex-1 bg-white rounded-full px-4 py-2 text-sm outline-none shadow-sm" placeholder="打字或貼 Sticker..." autocomplete="off">
-        <button onclick="sendMessage()" class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center active:scale-90 shadow-md">
-            <i class="fas fa-paper-plane text-sm"></i>
-        </button>
+        <button onclick="sendMessage()" class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md"><i class="fas fa-paper-plane text-sm"></i></button>
     </div>
 
     <script>
@@ -181,12 +156,15 @@
         const scrollBtn = document.getElementById('scroll-to-bottom');
 
         chatBox.addEventListener('scroll', () => {
-            const isFarFromBottom = chatBox.scrollHeight - chatBox.scrollTop > 800;
-            scrollBtn.style.display = isFarFromBottom ? 'flex' : 'none';
+            scrollBtn.style.display = (chatBox.scrollHeight - chatBox.scrollTop > 800) ? 'flex' : 'none';
         });
 
         function scrollToEnd() { chatBox.scrollTop = chatBox.scrollHeight; }
-        function zoomImg(src) { document.getElementById('full-img').src = src; document.getElementById('photo-viewer').style.display = 'flex'; }
+        
+        function zoomImg(src) { 
+            document.getElementById('full-img').src = src; 
+            document.getElementById('photo-viewer').style.display = 'flex'; 
+        }
 
         function openEmojiPicker() { document.getElementById('emoji-trigger').focus(); }
         function handleCustomEmoji(input) {
@@ -210,9 +188,7 @@
         function toggleSearch(show) {
             document.getElementById('search-bar').style.display = show ? 'flex' : 'none';
             if(show) document.getElementById('search-input').focus();
-            else clearSearch();
         }
-        function clearSearch() { document.getElementById('search-input').value = ""; doSearch(); }
         function doSearch() {
             const val = document.getElementById('search-input').value.toLowerCase();
             document.querySelectorAll('.msg-wrapper').forEach(wrapper => {
@@ -231,8 +207,6 @@
         function sendMedia(data) { db.ref('chats').push({ type:'sticker', data: data, sender: MY_NAME, timestamp: Date.now(), seen: false }); }
 
         function handleStart(id, sender, text, e) {
-            // 阻止系統預設行為
-            if (e.cancelable) e.preventDefault();
             selectedMsg = { id, sender, text };
             longPressTimer = setTimeout(() => {
                 const rect = e.touches ? e.touches[0] : e;
@@ -243,8 +217,7 @@
                 overlay.style.display = 'block';
                 bar.style.display = 'flex'; bar.style.top = (rect.clientY - 80) + 'px'; bar.style.left = '20px';
                 menu.style.display = 'block'; menu.style.top = (rect.clientY + 10) + 'px'; menu.style.left = '20px';
-                // 震動一下（如果有支援）
-                if (navigator.vibrate) navigator.vibrate(50);
+                if (navigator.vibrate) navigator.vibrate(40);
             }, 600);
         }
 
@@ -252,7 +225,6 @@
             document.getElementById('msg-menu').style.display = 'none'; 
             document.getElementById('reaction-bar').style.display = 'none'; 
             document.getElementById('close-overlay').style.display = 'none';
-            document.getElementById('emoji-trigger').blur();
         }
 
         function addReact(emoji) { if(selectedMsg) db.ref('chats/'+selectedMsg.id).update({ reaction: emoji }); closeAll(); }
