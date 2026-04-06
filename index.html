@@ -3,45 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>E ² Chat Pro Max</title>
+    <title>E ² Chat Ultimate Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; position: fixed; background: #000; touch-action: none; }
-        * { -webkit-tap-highlight-color: transparent; outline: none; }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; position: fixed; background: #000; }
+        /* 鎖死原生選單，防止彈出「複製/查詢」 */
+        * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; outline: none; }
+        input, textarea { -webkit-user-select: text; user-select: text; }
         
         #viewport { width: 100vw; height: 100%; overflow: hidden; position: relative; }
-        #main-slider { display: flex; width: 200vw; height: 100%; transition: transform 0.3s cubic-bezier(0.1, 0.7, 0.1, 1); will-change: transform; }
-        .page { width: 100vw; height: 100%; position: relative; display: flex; flex-direction: column; background: #fff; overflow: hidden; }
+        #main-slider { display: flex; width: 200vw; height: 100%; transition: transform 0.3s ease-out; }
+        .page { width: 100vw; height: 100%; position: relative; display: flex; flex-direction: column; background: #fff; }
 
         #chat-bg-layer { position: absolute; inset: 0; z-index: 0; background-color: #efe7dd; background-size: cover; background-position: center; pointer-events: none; }
-        
-        .chat-container { flex: 1; overflow-y: auto; overflow-x: hidden; z-index: 1; padding: 15px; touch-action: pan-y; }
+        .chat-container { flex: 1; overflow-y: auto; z-index: 1; padding: 15px; -webkit-overflow-scrolling: touch; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
 
-        .bubble { max-width: 75%; padding: 8px 12px; font-size: 15px; position: relative; word-break: break-all; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        /* 氣泡樣式 */
+        .bubble { max-width: 75%; padding: 8px 12px; font-size: 15px; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
         .bubble-me { background: #dcf8c6; border-radius: 12px 12px 0 12px; }
         .bubble-other { background: #fff; border-radius: 0 12px 12px 12px; }
-        .edited-tag { font-size: 9px; color: #999; margin-left: 4px; font-style: italic; }
-        
-        .avatar-box { width: 35px; height: 35px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #eee; }
-        .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
+        /* 圖片氣泡：無底色、無陰影 */
+        .img-mode { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
+        .img-mode img { border-radius: 12px; }
 
-        #scroll-btn { position: fixed; bottom: 85px; right: 20px; width: 35px; height: 35px; background: white; border-radius: 50%; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 100; color: #666; }
+        .avatar-box { width: 35px; height: 35px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #eee; }
+        #scroll-btn { position: absolute; bottom: 80px; right: 20px; width: 35px; height: 35px; background: white; border-radius: 50%; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 100; color: #666; }
 
         /* 選單樣式 */
-        #overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.05); }
-        .menu-pop { display: none; position: fixed; z-index: 3000; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; min-width: 130px; }
-        .menu-item { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 14px; text-align: center; }
+        #overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: transparent; }
+        .menu-pop { display: none; position: fixed; z-index: 3000; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); overflow: hidden; }
         
-        /* 圖片查看器修正：唔准 onclick 關閉，改用掣或雙擊 */
-        #photo-viewer { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
-        #full-img { max-width: 100%; max-height: 90%; object-fit: contain; -webkit-user-select: auto; user-select: auto; }
-        .close-pv { position: absolute; top: 40px; right: 20px; color: white; font-size: 24px; padding: 10px; z-index: 10001; }
+        #photo-viewer { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; align-items: center; justify-content: center; flex-direction: column; }
         
-        .memo-card { background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid #3b82f6; }
+        /* 留言板區分顏色 */
+        .memo-me { background: #e3f2fd; border-left: 5px solid #2196f3; }
+        .memo-other { background: #fff9c4; border-left: 5px solid #fbc02d; }
     </style>
 </head>
 <body>
@@ -50,10 +50,9 @@
     <div id="main-slider">
         <div class="page" id="chat-page">
             <div id="chat-bg-layer"></div>
-            
-            <header class="h-14 bg-white/95 backdrop-blur border-b flex items-center justify-between px-4 z-50">
+            <header class="h-14 bg-white/95 border-b flex items-center justify-between px-4 z-50">
                 <div class="flex items-center gap-2" onclick="openModal('profile-modal')">
-                    <i class="fas fa-pen text-gray-300 text-xs"></i>
+                    <i class="fas fa-pen text-gray-300 text-[10px]"></i>
                     <span id="display-name" class="font-bold text-sm">Loading...</span>
                 </div>
                 <div class="flex gap-4 text-gray-400">
@@ -65,72 +64,68 @@
             </header>
 
             <div id="search-box" class="hidden absolute top-0 w-full h-14 bg-white z-[60] flex items-center px-4 border-b">
-                <input id="search-input" type="text" placeholder="搜尋..." class="flex-1 bg-gray-100 rounded-full px-4 py-1.5 outline-none text-sm" oninput="doSearch()">
-                <span class="ml-3 text-blue-500 text-sm font-medium" onclick="toggleSearch(false)">取消</span>
+                <i class="fas fa-arrow-left mr-4 text-gray-500" onclick="toggleSearch(false)"></i>
+                <input id="search-input" type="text" placeholder="搜尋訊息..." class="flex-1 bg-gray-100 rounded-full px-4 py-1 outline-none text-sm" oninput="doSearch()">
             </div>
 
             <div id="chat-flow" class="chat-container no-scrollbar" onscroll="checkScroll()">
                 <div id="msg-list"></div>
+                <div id="scroll-btn" onclick="goBottom()"><i class="fas fa-chevron-down"></i></div>
             </div>
 
-            <div id="scroll-btn" onclick="goBottom()"><i class="fas fa-chevron-down"></i></div>
-
-            <div id="reply-bar" class="hidden bg-white/90 p-2 border-l-4 border-green-500 mx-2 mb-1 rounded flex justify-between items-center shadow-sm">
-                <div id="reply-preview-text" class="text-xs text-gray-500 truncate pl-2"></div>
-                <i class="fas fa-times-circle text-gray-300 p-1" onclick="cancelReply()"></i>
+            <div id="reply-bar" class="hidden bg-white p-2 border-l-4 border-green-500 mx-2 mb-1 rounded flex justify-between items-center shadow-sm">
+                <div id="reply-preview-text" class="text-xs text-gray-400 truncate pl-2"></div>
+                <i class="fas fa-times text-gray-300 p-1" onclick="cancelReply()"></i>
             </div>
 
             <footer class="p-3 bg-white border-t flex items-center gap-2 z-50">
                 <label class="text-green-500 text-2xl px-1"><i class="fas fa-plus-circle"></i><input type="file" class="hidden" accept="image/*" onchange="sendImage(this)"></label>
                 <input id="chat-input" class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm outline-none" placeholder="輸入訊息...">
-                <button id="send-btn" onclick="sendMsg()" class="bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-sm"><i class="fas fa-paper-plane text-sm"></i></button>
+                <button onclick="sendMsg()" class="bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md"><i class="fas fa-paper-plane text-sm"></i></button>
             </footer>
         </div>
 
         <div class="page" id="board-page">
             <header class="h-14 bg-white border-b flex items-center justify-between px-4 z-50">
-                <span class="font-bold text-gray-800">留言板 📌</span>
-                <button onclick="addMemo()" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-sm">+ 新留言</button>
+                <span class="font-bold">留言板 📌</span>
+                <button onclick="addMemo()" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-xs font-bold">+ 寫留言</button>
             </header>
-            <div id="memo-flow" class="flex-1 overflow-y-auto p-4 bg-gray-50 touch-action: pan-y;"></div>
+            <div id="memo-flow" class="flex-1 overflow-y-auto p-4 bg-gray-50"></div>
         </div>
     </div>
 </div>
 
 <div id="overlay" onclick="closeAll()"></div>
-
-<div id="react-bar" class="menu-pop rounded-full p-2 flex gap-2">
+<div id="react-bar" class="menu-pop rounded-full p-2 flex gap-2 items-center">
     <span onclick="react('❤️')" class="text-2xl p-1">❤️</span><span onclick="react('😂')" class="text-2xl p-1">😂</span><span onclick="react('😮')" class="text-2xl p-1">😮</span><span onclick="react('😢')" class="text-2xl p-1">😢</span><span onclick="react('👍')" class="text-2xl p-1">👍</span>
+    <i class="fas fa-plus-circle text-gray-300 text-xl px-1" onclick="react(prompt('Emoji:'))"></i>
 </div>
 
-<div id="msg-menu" class="menu-pop">
-    <div class="menu-item text-blue-600 font-medium" onclick="setupReply()">回覆</div>
-    <div id="menu-edit" class="menu-item text-green-600 font-medium" onclick="setupEdit()">編輯</div>
-    <div id="menu-unsend" class="menu-item text-red-500 font-bold" onclick="unsend()">撤回</div>
+<div id="msg-menu" class="menu-pop flex flex-col w-[140px]">
+    <div class="p-4 border-b text-center text-blue-500 font-medium" onclick="setupReply()">回覆</div>
+    <div id="menu-edit" class="p-4 border-b text-center text-green-600 font-medium" onclick="setupEdit()">編輯</div>
+    <div id="menu-unsend" class="p-4 text-center text-red-500 font-bold" onclick="unsend()">撤回</div>
 </div>
 
 <div id="photo-viewer">
-    <div class="close-pv" onclick="document.getElementById('photo-viewer').style.display='none'"><i class="fas fa-times"></i></div>
-    <img id="full-img" ondblclick="this.parentElement.style.display='none'">
-    <p class="text-white/40 text-[10px] mt-4">長按圖片下載 / 雙擊關閉</p>
+    <div class="absolute top-10 right-5 text-white text-2xl p-4" onclick="document.getElementById('photo-viewer').style.display='none'"><i class="fas fa-times"></i></div>
+    <img id="full-img" class="max-w-full max-h-[85vh] object-contain" ondblclick="this.parentElement.style.display='none'">
+    <p class="text-gray-500 text-xs mt-4">長按圖片可下載 / 雙擊關閉</p>
 </div>
 
 <div id="profile-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-2xl z-[4000] w-[85%] hidden shadow-2xl">
-    <h3 class="font-bold mb-4 text-center text-gray-700">設置資料</h3>
-    <input id="set-name" type="text" placeholder="顯示名字" class="w-full border p-2.5 rounded-lg mb-4 outline-none text-sm">
-    <button class="w-full bg-blue-50 text-blue-600 py-2.5 rounded-lg mb-2 text-sm font-medium" onclick="document.getElementById('set-avatar').click()">選取對方頭像</button>
+    <h3 class="font-bold mb-4 text-center">設置資料</h3>
+    <input id="set-name" type="text" placeholder="顯示名字" class="w-full border p-2 rounded mb-4">
+    <button class="w-full bg-blue-500 text-white py-2 rounded mb-2" onclick="document.getElementById('set-avatar').click()">選取對方頭像</button>
     <input type="file" id="set-avatar" class="hidden" onchange="handleAvatar(this)">
-    <button class="w-full bg-green-600 text-white py-3 rounded-lg font-bold shadow-md" onclick="saveProfile()">儲存並更新</button>
-    <p class="text-center text-gray-400 text-xs mt-4" onclick="closeAll()">取消</p>
+    <button class="w-full bg-green-600 text-white py-3 rounded font-bold" onclick="saveProfile()">儲存</button>
 </div>
 
 <div id="bg-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-2xl z-[4000] w-[85%] hidden shadow-2xl">
     <h3 class="font-bold mb-4 text-center">聊天背景</h3>
-    <button class="w-full bg-gray-100 py-2.5 rounded-lg mb-4 text-sm" onclick="document.getElementById('bg-file').click()">更換背景圖片</button>
+    <button class="w-full bg-gray-200 py-2 rounded mb-4" onclick="document.getElementById('bg-file').click()">選取背景圖</button>
     <input type="file" id="bg-file" class="hidden" onchange="handleBG(this)">
-    <p class="text-[10px] text-gray-400 mb-1">透明度調節</p>
-    <input type="range" id="bg-op" min="0.1" max="1" step="0.1" class="w-full accent-green-600" oninput="changeOp(this.value)">
-    <button class="w-full mt-6 py-2 border-t font-bold text-green-600" onclick="closeAll()">完成</button>
+    <input type="range" id="bg-op" min="0.1" max="1" step="0.1" class="w-full" oninput="changeOp(this.value)">
 </div>
 
 <script>
@@ -140,17 +135,15 @@
     
     const urlParams = new URLSearchParams(window.location.search);
     let MY_NAME = urlParams.get('user') || "E";
-    let curOtherAvatar = "", selectedID = null, replyData = null, isEditing = false, tempAvatar = null;
+    let curOtherAvatar = "", selectedID = null, replyData = null, isEditing = false, tempAvatar = null, lastTap = 0;
 
     // 滑動鎖定
-    let startX = 0, startY = 0, pageIdx = 0;
+    let startX = 0, pageIdx = 0;
     const slider = document.getElementById('main-slider');
-
-    window.addEventListener('touchstart', e => { startX = e.touches[0].clientX; startY = e.touches[0].clientY; }, {passive: true});
+    window.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, {passive: true});
     window.addEventListener('touchend', e => {
         let dx = startX - e.changedTouches[0].clientX;
-        let dy = startY - e.changedTouches[0].clientY;
-        if(Math.abs(dx) > 100 && Math.abs(dx) > Math.abs(dy)) {
+        if(Math.abs(dx) > 100) {
             if(dx > 0 && pageIdx === 0) move(1);
             else if(dx < 0 && pageIdx === 1) move(0);
         }
@@ -172,8 +165,9 @@
             const flow = document.getElementById('memo-flow'); flow.innerHTML = "";
             snap.forEach(child => {
                 const m = child.val();
-                flow.innerHTML += `<div class="memo-card" oncontextmenu="if(confirm('刪除？')) db.ref('board/${child.key}').remove(); return false;">
-                    <p class="text-[14px] text-gray-800">${m.text}</p>
+                const colorClass = m.user === MY_NAME ? 'memo-me' : 'memo-other';
+                flow.innerHTML += `<div class="p-4 rounded-xl mb-4 ${colorClass}" oncontextmenu="if(confirm('刪除？')) db.ref('board/${child.key}').remove(); return false;">
+                    <p class="text-sm">${m.text}</p>
                     <p class="text-[9px] text-gray-400 mt-2 text-right">${new Date(m.time).toLocaleString()}</p>
                 </div>`;
             });
@@ -186,16 +180,22 @@
             const m = child.val(), isMe = m.sender === MY_NAME, id = child.key;
             if(!isMe && !m.seen) db.ref(`chats/${id}/seen`).set(true);
             const d = new Date(m.time).toLocaleDateString();
-            if(d !== lastDate) { html += `<div class="text-center my-4"><span class="bg-black/5 text-gray-400 text-[10px] px-2 py-0.5 rounded-full">${d}</span></div>`; lastDate = d; }
+            if(d !== lastDate) { html += `<div class="text-center my-6"><span class="bg-black/5 text-gray-400 text-[10px] px-2 py-0.5 rounded-full">${d}</span></div>`; lastDate = d; }
             const avatar = !isMe ? `<div class="avatar-box mr-2"><img src="${curOtherAvatar}"></div>` : "";
             const reply = m.replyTo ? `<div class="text-[10px] opacity-40 border-l-2 border-green-500 pl-1 mb-1 truncate">${m.replyTo}</div>` : "";
-            const content = m.type === 'img' ? `<img src="${m.data}" class="max-w-[200px] rounded-lg shadow-sm" onclick="zoomImg('${m.data}')">` : `<span>${m.text}</span>`;
-            const edited = m.edited ? `<span class="edited-tag">(已編輯)</span>` : "";
+            const isImg = m.type === 'img';
+            const content = isImg ? `<img src="${m.data}" class="max-w-[200px]" onclick="zoomImg('${m.data}')">` : `<span>${m.text}</span>`;
+            const edited = m.edited ? `<span class="text-[9px] opacity-30 ml-1">(已編輯)</span>` : "";
             const seen = (isMe && m.seen) ? `<span class="text-[9px] text-blue-400 font-bold ml-1">已讀</span>` : "";
-            html += `<div class="flex ${isMe?'justify-end':'justify-start'} mb-4 px-1">
+            
+            html += `<div class="flex ${isMe?'justify-end':'justify-start'} mb-4 px-1" onclick="handleDblClick('${id}')">
                 ${avatar}<div class="flex flex-col ${isMe?'items-end':'items-start'}">
                     <div class="flex ${isMe?'flex-row-reverse':'flex-row'} items-end gap-1">
-                        <div class="bubble ${isMe?'bubble-me':'bubble-other'}" ontouchstart="handleTouchStart(event, '${id}', ${isMe}, '${encodeURIComponent(m.text||"")}')" ontouchend="clearTimeout(lp)">${reply}${content}${edited}${m.react ? `<div class="absolute -bottom-2 ${isMe?'left-0':'right-0'} bg-white border rounded-full px-1.5 text-[10px] shadow-sm">${m.react}</div>` : ""}</div>
+                        <div class="bubble ${isMe?'bubble-me':'bubble-other'} ${isImg?'img-mode':''}" 
+                             ontouchstart="handleTouchStart(event, '${id}', ${isMe}, '${encodeURIComponent(m.text||"")}')" 
+                             ontouchend="clearTimeout(lp)">
+                             ${reply}${content}${edited}${m.react ? `<div class="absolute -bottom-2 ${isMe?'left-0':'right-0'} bg-white border rounded-full px-1.5 text-[10px] shadow-sm">${m.react}</div>` : ""}
+                        </div>
                         <div class="text-[9px] text-gray-400 flex flex-col items-center">${seen}<span>${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div>
                     </div>
                 </div>
@@ -203,6 +203,12 @@
         });
         list.innerHTML = html; goBottom();
     });
+
+    function handleDblClick(id) {
+        const now = Date.now();
+        if(now - lastTap < 300) db.ref(`chats/${id}/react`).set('❤️');
+        lastTap = now;
+    }
 
     function sendMsg() {
         const input = document.getElementById('chat-input'), txt = input.value.trim();
@@ -216,35 +222,46 @@
     function handleTouchStart(e, id, isMe, txt) {
         selectedID = id; const rawTxt = decodeURIComponent(txt);
         lp = setTimeout(() => {
-            if(navigator.vibrate) navigator.vibrate(50);
             const t = e.touches[0], overlay = document.getElementById('overlay'), rb = document.getElementById('react-bar'), mm = document.getElementById('msg-menu');
-            overlay.style.display = 'block'; rb.style.display = 'flex'; rb.style.top = (t.clientY - 100) + 'px'; rb.style.left = '50%'; rb.style.transform = 'translateX(-50%)';
-            mm.style.display = 'block'; mm.style.top = (t.clientY + 20) + 'px'; mm.style.left = '50%'; mm.style.transform = 'translateX(-50%)';
+            overlay.style.display = 'block';
+            rb.style.display = 'flex'; rb.style.top = (t.clientY - 110) + 'px'; rb.style.left = '50%'; rb.style.transform = 'translateX(-50%)';
+            mm.style.display = 'flex'; mm.style.top = (t.clientY + 20) + 'px'; mm.style.left = '50%'; mm.style.transform = 'translateX(-50%)';
             document.getElementById('menu-unsend').style.display = isMe ? 'block' : 'none';
             document.getElementById('menu-edit').style.display = isMe ? 'block' : 'none';
             window.lastSelectedTxt = rawTxt;
         }, 600);
     }
 
+    function react(emo) { if(emo) db.ref(`chats/${selectedID}/react`).set(emo); closeAll(); }
+    function unsend() { if(confirm("確定撤回？")) db.ref(`chats/${selectedID}`).remove(); closeAll(); }
+    function goBottom() { const f = document.getElementById('chat-flow'); f.scrollTop = f.scrollHeight; }
+    function checkScroll() { 
+        const f = document.getElementById('chat-flow'); 
+        const btn = document.getElementById('scroll-btn');
+        btn.style.display = (f.scrollHeight - f.scrollTop > 800) ? 'flex' : 'none'; 
+    }
+    function zoomImg(url) { document.getElementById('full-img').src = url; document.getElementById('photo-viewer').style.display = 'flex'; }
+    function sendImage(i) { if(i.files[0]) { const r = new FileReader(); r.onload = e => db.ref('chats').push({ type: 'img', data: e.target.result, sender: MY_NAME, time: Date.now(), seen: false }); r.readAsDataURL(i.files[0]); } }
+    function addMemo() { const t = prompt("內容:"); if(t) db.ref('board').push({ text: t, time: Date.now(), user: MY_NAME }); }
+    function toggleSearch(s) { document.getElementById('search-box').style.display = s ? 'flex' : 'none'; }
+    function doSearch() {
+        const v = document.getElementById('search-input').value.toLowerCase();
+        document.querySelectorAll('.bubble').forEach(b => {
+            const row = b.closest('.flex');
+            row.style.display = b.innerText.toLowerCase().includes(v) ? 'flex' : 'none';
+        });
+    }
+    function clearChat() { if(confirm("⚠️ 確定清空所有歷史紀錄？")) db.ref('chats').remove(); }
     function setupEdit() { isEditing = true; const i = document.getElementById('chat-input'); i.value = window.lastSelectedTxt; i.focus(); closeAll(); }
     function setupReply() { replyData = { text: window.lastSelectedTxt || "[圖片]" }; document.getElementById('reply-bar').classList.remove('hidden'); document.getElementById('reply-preview-text').innerText = replyData.text; closeAll(); }
-    function react(emo) { db.ref(`chats/${selectedID}/react`).set(emo); closeAll(); }
-    function unsend() { if(confirm("撤回訊息？")) db.ref(`chats/${selectedID}`).remove(); closeAll(); }
-    function goBottom() { const f = document.getElementById('chat-flow'); f.scrollTop = f.scrollHeight; }
-    function checkScroll() { const f = document.getElementById('chat-flow'); document.getElementById('scroll-btn').style.display = (f.scrollHeight - f.scrollTop > 800) ? 'flex' : 'none'; }
-    function zoomImg(url) { document.getElementById('full-img').src = url; document.getElementById('photo-viewer').style.display = 'flex'; }
+    function cancelReply() { replyData = null; document.getElementById('reply-bar').classList.add('hidden'); isEditing = false; }
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById('overlay').style.display = 'block'; }
+    function closeAll() { ['profile-modal', 'bg-modal', 'overlay', 'msg-menu', 'react-bar', 'search-box'].forEach(id => { const el = document.getElementById(id); if(el) { if(el.classList.contains('fixed')) el.classList.add('hidden'); else el.style.display = 'none'; } }); }
+    function openMedia() { move(0); /* 暫時導向對話頁搜尋圖片功能，或可自定義 */ }
     function handleBG(i) { if(i.files[0]) { const r = new FileReader(); r.onload = e => { document.getElementById('chat-bg-layer').style.backgroundImage = `url(${e.target.result})`; localStorage.setItem('chat-bg', e.target.result); }; r.readAsDataURL(i.files[0]); } }
     function changeOp(v) { document.getElementById('chat-bg-layer').style.opacity = v; localStorage.setItem('chat-bg-op', v); }
     function handleAvatar(i) { if(i.files[0]) { const r = new FileReader(); r.onload = e => tempAvatar = e.target.result; r.readAsDataURL(i.files[0]); } }
     function saveProfile() { const n = document.getElementById('set-name').value; const up = {}; if(n) up.name = n; if(tempAvatar) up.avatar = tempAvatar; db.ref('notes/profile').update(up); closeAll(); }
-    function sendImage(i) { if(i.files[0]) { const r = new FileReader(); r.onload = e => db.ref('chats').push({ type: 'img', data: e.target.result, sender: MY_NAME, time: Date.now(), seen: false }); r.readAsDataURL(i.files[0]); } }
-    function addMemo() { const t = prompt("留言內容:"); if(t) db.ref('board').push({ text: t, time: Date.now() }); }
-    function toggleSearch(s) { document.getElementById('search-box').style.display = s ? 'flex' : 'none'; }
-    function doSearch() { const v = document.getElementById('search-input').value.toLowerCase(); document.querySelectorAll('.bubble').forEach(b => b.closest('.flex').style.display = b.innerText.toLowerCase().includes(v) ? 'flex' : 'none'); }
-    function clearChat() { if(confirm("清空對話紀錄？")) db.ref('chats').remove(); }
-    function cancelReply() { replyData = null; document.getElementById('reply-bar').classList.add('hidden'); isEditing = false; }
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById('overlay').style.display = 'block'; }
-    function closeAll() { ['profile-modal', 'bg-modal', 'overlay', 'msg-menu', 'react-bar', 'search-box'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.contains('fixed') ? el.classList.add('hidden') : el.style.display = 'none'; }); }
 </script>
 
 </body>
