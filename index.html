@@ -9,55 +9,57 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
-        /* 基礎防誤觸與字體設定 */
         * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
         input, textarea { -webkit-user-select: text; user-select: text; font-size: 16px !important; }
-        body { background-color: #efe7dd; font-family: -apple-system, sans-serif; overflow: hidden; touch-action: manipulation; }
         
-        /* 容器與氣泡 */
-        .chat-container { height: calc(100vh - 130px); scroll-behavior: smooth; position: relative; }
+        /* 背景層：控制透明度唔會影響到字 */
+        #chat-bg-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; background-color: #efe7dd;
+            background-position: center; background-size: cover; background-repeat: no-repeat;
+            transition: opacity 0.3s;
+        }
+
+        body { font-family: -apple-system, sans-serif; overflow: hidden; touch-action: manipulation; }
+        .chat-container { height: calc(100vh - 130px); scroll-behavior: smooth; position: relative; background: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
         .bubble { max-width: 85%; padding: 8px 12px; font-size: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; }
         .bubble-me { background-color: #dcf8c6; border-radius: 12px 12px 0 12px; align-self: flex-end; }
         .bubble-other { background-color: #ffffff; border-radius: 12px 12px 12px 0; align-self: flex-start; }
         
-        /* Sticker 模式：去背景 */
+        /* Sticker 模式 */
         .sticker-mode { background: transparent !important; box-shadow: none !important; padding: 0 !important; border: none !important; }
         .media-content { max-width: 180px; border-radius: 8px; display: block; margin: 4px 0; cursor: pointer; }
 
-        /* 選單與反應 */
         #reaction-bar, #msg-menu { display: none; position: fixed; z-index: 500; background: white; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); border: 1px solid #eee; min-width: 140px; }
         .heart-react { position: absolute; bottom: -8px; right: 5px; background: white; border-radius: 10px; padding: 1px 5px; font-size: 12px; border: 1px solid #eee; z-index: 10; }
         
-        /* 置頂與日期 */
-        #pin-container { display: none; background: white; border-bottom: 1px solid #eee; padding: 8px 16px; align-items: center; gap: 10px; z-index: 40; }
+        #pin-container { display: none; background: rgba(255,255,255,0.9); backdrop-filter: blur(5px); border-bottom: 1px solid #eee; padding: 8px 16px; align-items: center; gap: 10px; z-index: 40; }
         .date-divider { text-align: center; margin: 20px 0; }
         .date-divider span { background: rgba(0,0,0,0.2); color: white; padding: 3px 12px; border-radius: 10px; font-size: 11px; }
 
-        /* 浮動按鈕 */
         #scroll-to-bottom { display: none; position: fixed; bottom: 85px; right: 20px; width: 40px; height: 40px; background: white; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.15); z-index: 300; align-items: center; justify-content: center; cursor: pointer; }
         
-        /* 圖片查看器 */
+        #search-bar { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 56px; background: white; z-index: 100; align-items: center; padding: 0 16px; }
+        #media-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; overflow-y: auto; }
+        
+        /* 背景設定彈窗 */
+        #bg-settings-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 1100; width: 85%; max-width: 300px; }
+
         #photo-viewer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
         #photo-viewer img { max-width: 95%; max-height: 90%; object-fit: contain; }
 
-        /* 搜尋與媒體頁 */
-        #search-bar { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 56px; background: white; z-index: 100; align-items: center; padding: 0 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        #media-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; overflow-y: auto; }
-        .media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; }
-        .media-grid img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #f0f0f0; }
-
-        /* 輸入狀態 */
-        .typing-indicator { display: none; align-self: flex-start; background: #fff; padding: 8px 12px; border-radius: 12px 12px 12px 0; margin-bottom: 10px; font-size: 13px; color: #888; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .typing-indicator { display: none; align-self: flex-start; background: rgba(255,255,255,0.8); padding: 8px 12px; border-radius: 12px 12px 12px 0; margin-bottom: 10px; font-size: 13px; color: #888; }
         .dot { display: inline-block; width: 4px; height: 4px; margin-right: 2px; background: #bbb; border-radius: 50%; animation: blink 1.4s infinite both; }
         @keyframes blink { 0% { opacity: .2; transform: translateY(0); } 20% { opacity: 1; transform: translateY(-3px); } 100% { opacity: .2; transform: translateY(0); } }
     </style>
 </head>
 <body class="flex flex-col h-screen max-w-md mx-auto bg-white border-x">
 
+    <div id="chat-bg-layer"></div>
     <div id="close-overlay" class="fixed top-0 left-0 w-full h-full z-[400] hidden" onclick="closeAll()"></div>
     
-    <div id="photo-viewer" onclick="this.style.display='none'"><img id="full-img" src=""></div>
-
     <div id="search-bar">
         <i class="fas fa-arrow-left text-gray-500 p-2 cursor-pointer" onclick="toggleSearch(false)"></i>
         <div class="flex-1 flex items-center bg-gray-100 rounded-full px-3 mx-2">
@@ -71,12 +73,27 @@
             <i class="fas fa-arrow-left text-gray-700 p-2 mr-4 cursor-pointer" onclick="toggleMediaPage(false)"></i>
             <span class="font-bold">所有媒體</span>
         </header>
-        <div id="media-grid-container" class="media-grid"></div>
+        <div id="media-grid-container" class="grid grid-cols-3 gap-1 p-1"></div>
     </div>
+
+    <div id="bg-settings-modal">
+        <h3 class="font-bold mb-4 text-center">聊天室背景設定</h3>
+        <button class="w-full bg-green-600 text-white py-2 rounded-lg mb-4 text-sm" onclick="document.getElementById('bg-input').click()">
+            <i class="fas fa-image mr-2"></i> 選擇背景圖片
+        </button>
+        <input type="file" id="bg-input" class="hidden" accept="image/*" onchange="applyBackground(this)">
+        <label class="block text-xs text-gray-500 mb-2 text-center">背景不透明度</label>
+        <input type="range" id="bg-opacity-slider" min="0.1" max="1" step="0.05" value="1" class="w-full accent-green-600" oninput="updateBgOpacity(this.value)">
+        <button class="w-full mt-6 text-gray-400 text-xs" onclick="resetBackground()">還原預設背景</button>
+        <button class="w-full mt-4 font-bold text-green-700 border-t pt-4" onclick="closeAll()">完成</button>
+    </div>
+
+    <div id="photo-viewer" onclick="this.style.display='none'"><img id="full-img" src=""></div>
 
     <header class="h-14 border-b flex items-center justify-between px-4 bg-white z-20">
         <div class="flex items-center gap-2"><span class="w-2 h-2 bg-green-500 rounded-full"></span><span id="user-display" class="font-bold text-sm text-gray-700">E ²</span></div>
-        <div class="flex gap-1">
+        <div class="flex gap-1 items-center">
+            <i class="fas fa-palette text-gray-400 p-2 cursor-pointer" onclick="openBgSettings()"></i>
             <i class="fas fa-images text-gray-400 p-2 cursor-pointer" onclick="toggleMediaPage(true)"></i>
             <i class="fas fa-search text-gray-400 p-2 cursor-pointer" onclick="toggleSearch(true)"></i>
             <i class="fas fa-trash-alt text-red-200 p-2 cursor-pointer" onclick="clearAllHistory()"></i>
@@ -116,7 +133,7 @@
         <i class="fas fa-times absolute right-2 top-2 text-gray-300 cursor-pointer" onclick="cancelReply()"></i>
     </div>
 
-    <div class="p-3 bg-[#f0f2f5] flex items-center gap-2 border-t">
+    <div class="p-3 bg-[#f0f2f5] flex items-center gap-2 border-t z-30">
         <label class="text-green-600 text-2xl px-1 cursor-pointer"><i class="fas fa-plus-circle"></i><input type="file" id="file-input" class="hidden" onchange="autoProcessFile(this)"></label>
         <input id="chat-input" class="flex-1 bg-white rounded-full px-4 py-2 text-sm outline-none shadow-sm" placeholder="打字..." oninput="updateTypingStatus()">
         <button onclick="sendMessage()" class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md"><i class="fas fa-paper-plane text-sm"></i></button>
@@ -142,11 +159,31 @@
         const chatBox = document.getElementById('chat-content');
         const scrollBtn = document.getElementById('scroll-to-bottom');
 
-        // 滾動與回底
-        chatBox.addEventListener('scroll', () => { scrollBtn.style.display = (chatBox.scrollTop < chatBox.scrollHeight - 1200) ? 'flex' : 'none'; });
-        function scrollToEnd() { chatBox.scrollTop = chatBox.scrollHeight; }
+        // 初始化背景
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedBg = localStorage.getItem('chat-bg');
+            const savedOpacity = localStorage.getItem('chat-bg-opacity') || "1";
+            if (savedBg) document.getElementById('chat-bg-layer').style.backgroundImage = `url(${savedBg})`;
+            updateBgOpacity(savedOpacity);
+            document.getElementById('bg-opacity-slider').value = savedOpacity;
+        });
 
-        // 搜尋邏輯
+        function openBgSettings() { document.getElementById('bg-settings-modal').style.display='block'; document.getElementById('close-overlay').style.display='block'; }
+        function applyBackground(input) {
+            if (input.files && input.files[0]) {
+                const r = new FileReader();
+                r.onload = (e) => {
+                    const data = e.target.result;
+                    document.getElementById('chat-bg-layer').style.backgroundImage = `url(${data})`;
+                    localStorage.setItem('chat-bg', data);
+                };
+                r.readAsDataURL(input.files[0]);
+            }
+        }
+        function updateBgOpacity(val) { document.getElementById('chat-bg-layer').style.opacity = val; localStorage.setItem('chat-bg-opacity', val); }
+        function resetBackground() { localStorage.removeItem('chat-bg'); document.getElementById('chat-bg-layer').style.backgroundImage = ''; updateBgOpacity(1); }
+
+        // 搜尋
         function toggleSearch(show) { document.getElementById('search-bar').style.display = show ? 'flex' : 'none'; if(!show) clearSearch(); else document.getElementById('search-input').focus(); }
         function doSearch() {
             const val = document.getElementById('search-input').value.toLowerCase();
@@ -158,32 +195,32 @@
         }
         function clearSearch() { document.getElementById('search-input').value = ""; doSearch(); }
 
-        // 媒體頁邏輯
+        // 媒體
         function toggleMediaPage(show) {
             document.getElementById('media-page').style.display = show ? 'block' : 'none';
             if(show) {
                 const grid = document.getElementById('media-grid-container');
                 grid.innerHTML = "";
-                allMessages.filter(m => m.type === 'sticker').reverse().forEach(m => { 
-                    grid.innerHTML += `<img src="${m.data}" onclick="zoomImg('${m.data}')">`; 
+                allMessages.filter(m => m.type === 'sticker').reverse().forEach(m => {
+                    grid.innerHTML += `<img src="${m.data}" class="aspect-square object-cover w-full" onclick="zoomImg('${m.data}')">`;
                 });
             }
         }
 
-        // 置頂邏輯
+        // 置頂
         db.ref('pins').on('value', snap => {
             pinnedMsgs = []; snap.forEach(c => { pinnedMsgs.push({ id: c.key, ...c.val() }); });
-            document.getElementById('pin-container').style.display = pinnedMsgs.length > 0 ? 'flex' : 'none';
+            document.getElementById('pin-container').style.display = pinnedMsgs.length ? 'flex' : 'none';
             updatePinBar();
         });
-        function updatePinBar() { if (!pinnedMsgs.length) return; if (currentPinIdx >= pinnedMsgs.length) currentPinIdx = 0; document.getElementById('pin-text').innerText = pinnedMsgs[currentPinIdx].text; document.getElementById('pin-count').innerText = (currentPinIdx+1)+"/"+pinnedMsgs.length; }
+        function updatePinBar() { if(!pinnedMsgs.length) return; if(currentPinIdx >= pinnedMsgs.length) currentPinIdx=0; document.getElementById('pin-text').innerText = pinnedMsgs[currentPinIdx].text; document.getElementById('pin-count').innerText = (currentPinIdx+1)+"/"+pinnedMsgs.length; }
         function nextPin() { currentPinIdx = (currentPinIdx + 1) % pinnedMsgs.length; updatePinBar(); }
         function togglePin() {
-            if (!selectedMsg) return;
+            if(!selectedMsg) return;
             const idx = pinnedMsgs.findIndex(p => p.id === selectedMsg.id);
-            if (idx > -1) db.ref('pins/' + selectedMsg.id).remove();
-            else if (pinnedMsgs.length < 3) db.ref('pins/' + selectedMsg.id).set({ text: selectedMsg.text, timestamp: Date.now() });
-            else alert("最多置頂 3 條！");
+            if(idx > -1) db.ref('pins/'+selectedMsg.id).remove();
+            else if(pinnedMsgs.length < 3) db.ref('pins/'+selectedMsg.id).set({ text: selectedMsg.text, timestamp: Date.now() });
+            else alert("最多置頂 3 條");
             closeAll();
         }
         function goToPinnedMsg() {
@@ -191,27 +228,17 @@
             if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.style.background = "#fff9c4"; setTimeout(()=>el.style.background="transparent", 1500); }
         }
 
-        // 輸入狀態
-        function updateTypingStatus() { db.ref('typing/' + MY_NAME).set(true); clearTimeout(typingTimer); typingTimer = setTimeout(() => db.ref('typing/' + MY_NAME).set(false), 2000); }
-        db.ref('typing').on('value', snap => {
-            let someone = false; for (let u in snap.val()) { if (u !== MY_NAME && snap.val()[u]) { document.getElementById('typing-name').innerText = u; someone = true; break; } }
-            document.getElementById('typing-box').style.display = someone ? 'block' : 'none';
-        });
-
-        // 核心對話監聽與 SEEN
+        // 核心訊息監聽與即時 Seen
         db.ref('chats').on('value', snap => {
             const list = document.getElementById('msg-list');
             let html = ""; let lastD = ""; allMessages = [];
             snap.forEach(c => {
                 const m = c.val(); allMessages.push(m);
                 const isMe = m.sender === MY_NAME;
-                if (!isMe && m.seen === false) db.ref('chats/' + c.key).update({ seen: true }); // 即時 Seen
-
+                if (!isMe && m.seen === false) db.ref('chats/' + c.key).update({ seen: true });
                 const d = new Date(m.timestamp).toLocaleDateString();
                 if(d !== lastD) { html += `<div class="date-divider"><span>${d}</span></div>`; lastD = d; }
                 const time = new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                
-                // Sticker 模式邏輯
                 const isSticker = (m.type === 'sticker');
                 const content = m.type === 'text' ? `<span>${m.text}</span>` : `<img src="${m.data}" class="media-content" onclick="zoomImg('${m.data}')">`;
                 const reply = m.replyTo ? `<div class="text-[10px] opacity-50 border-l-2 border-green-500 pl-1 mb-1">${m.replyTo.text}</div>` : "";
@@ -233,35 +260,43 @@
             if (chatBox.scrollHeight - chatBox.scrollTop < 1200) scrollToEnd();
         });
 
-        // 長按功能
+        // 輔助功能
         function handleStart(id, sender, text, e) {
             selectedMsg = { id, sender, text: decodeURIComponent(text) || "[媒體]" };
             document.getElementById('pin-btn-text').innerText = pinnedMsgs.find(p=>p.id===id) ? "取消釘選" : "釘選訊息";
             longPressTimer = setTimeout(() => {
-                const rect = e.touches ? e.touches[0] : e;
+                const r = e.touches ? e.touches[0] : e;
                 document.getElementById('close-overlay').style.display = 'block';
                 document.getElementById('reaction-bar').style.display = 'flex';
-                document.getElementById('reaction-bar').style.top = (rect.clientY - 95) + 'px';
+                document.getElementById('reaction-bar').style.top = (r.clientY - 95) + 'px';
                 document.getElementById('msg-menu').style.display = 'block';
-                document.getElementById('msg-menu').style.top = (rect.clientY + 10) + 'px';
+                document.getElementById('msg-menu').style.top = (r.clientY + 10) + 'px';
                 document.getElementById('menu-unsend').style.display = (sender === MY_NAME) ? 'flex' : 'none';
                 if (navigator.vibrate) navigator.vibrate(40);
             }, 600);
         }
-
-        // 基礎功能
-        function closeAll() { document.getElementById('msg-menu').style.display = 'none'; document.getElementById('reaction-bar').style.display = 'none'; document.getElementById('close-overlay').style.display = 'none'; }
+        function closeAll() { 
+            document.getElementById('msg-menu').style.display = 'none'; 
+            document.getElementById('reaction-bar').style.display = 'none'; 
+            document.getElementById('close-overlay').style.display = 'none'; 
+            document.getElementById('bg-settings-modal').style.display = 'none'; 
+        }
         function sendMessage() { const i = document.getElementById('chat-input'); if(i.value.trim()||replyTo){ db.ref('chats').push({ type:'text', text: i.value, sender: MY_NAME, timestamp: Date.now(), seen: false, replyTo: replyTo }); i.value=""; cancelReply(); db.ref('typing/'+MY_NAME).set(false); } }
         function sendMedia(data) { db.ref('chats').push({ type:'sticker', data: data, sender: MY_NAME, timestamp: Date.now(), seen: false }); }
         function addReact(emoji) { if(selectedMsg) db.ref('chats/'+selectedMsg.id).update({ reaction: emoji }); closeAll(); }
         function executeUnsend() { if(selectedMsg) { db.ref('chats/'+selectedMsg.id).remove(); db.ref('pins/'+selectedMsg.id).remove(); } closeAll(); }
         function startReply() { replyTo = { user: selectedMsg.sender, text: selectedMsg.text }; document.getElementById('reply-preview').style.display = 'block'; document.getElementById('reply-text').innerText = replyTo.user + ": " + replyTo.text; closeAll(); }
         function cancelReply() { replyTo = null; document.getElementById('reply-preview').style.display = 'none'; }
-        function openEmojiPicker() { document.getElementById('emoji-trigger').focus(); }
-        function handleCustomEmoji(input) { if (input.value.trim()) { addReact(input.value.trim()); input.value = ""; input.blur(); } }
-        function zoomImg(src) { document.getElementById('full-img').src = src; document.getElementById('photo-viewer').style.display = 'flex'; }
-        function clearAllHistory() { if (confirm("⚠️ 確定清空所有紀錄與置頂？")) { db.ref('chats').remove(); db.ref('pins').remove(); } }
+        function updateTypingStatus() { db.ref('typing/'+MY_NAME).set(true); clearTimeout(typingTimer); typingTimer = setTimeout(()=>db.ref('typing/'+MY_NAME).set(false), 2000); }
+        db.ref('typing').on('value', snap => {
+            let s = false; for(let u in snap.val()){ if(u!==MY_NAME && snap.val()[u]){ document.getElementById('typing-name').innerText=u; s=true; break; } }
+            document.getElementById('typing-box').style.display = s ? 'block' : 'none';
+        });
+        function zoomImg(s) { document.getElementById('full-img').src = s; document.getElementById('photo-viewer').style.display = 'flex'; }
+        function clearAllHistory() { if(confirm("確定清空？")) { db.ref('chats').remove(); db.ref('pins').remove(); } }
         function autoProcessFile(input) { if(input.files[0]) { const r = new FileReader(); r.onload = (e) => sendMedia(r.result); r.readAsDataURL(input.files[0]); } }
+        function scrollToEnd() { chatBox.scrollTop = chatBox.scrollHeight; }
+        chatBox.addEventListener('scroll', () => { scrollBtn.style.display = (chatBox.scrollTop < chatBox.scrollHeight - 1200) ? 'flex' : 'none'; });
     </script>
 </body>
 </html>
