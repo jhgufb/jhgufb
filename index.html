@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>E ² Chat Pro Max</title>
+    <title>E ² Chat Fixed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -30,8 +30,23 @@
         .avatar-box { width: 35px; height: 35px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #eee; }
         .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* 置底箭嘴：固定在 Footer 之上 */
-        #scroll-btn { position: absolute; bottom: 80px; right: 20px; width: 38px; height: 38px; background: white; border-radius: 50%; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.15); z-index: 100; color: #555; }
+        /* --- 修正：箭嘴位置 --- */
+        #scroll-btn { 
+            position: absolute; 
+            bottom: 90px; 
+            right: 20px; 
+            width: 40px; 
+            height: 40px; 
+            background: white; 
+            border-radius: 50%; 
+            display: none; /* 由 JS 控制顯示 */
+            align-items: center; 
+            justify-content: center; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+            z-index: 1000; 
+            color: #555;
+            transition: opacity 0.2s;
+        }
 
         #overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: transparent; }
         .menu-pop { display: none; position: fixed; z-index: 3000; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
@@ -66,13 +81,14 @@
 
             <div id="search-box" class="hidden absolute top-0 w-full h-14 bg-white z-[60] flex items-center px-4 border-b">
                 <i class="fas fa-arrow-left mr-4 text-gray-500 p-2" onclick="toggleSearch(false)"></i>
-                <input id="search-input" type="text" placeholder="搜尋訊息內容..." class="flex-1 bg-gray-100 rounded-full px-4 py-1.5 outline-none text-sm" oninput="doSearch()">
+                <input id="search-input" type="text" placeholder="搜尋訊息..." class="flex-1 bg-gray-100 rounded-full px-4 py-1.5 outline-none text-sm" oninput="doSearch()">
             </div>
 
             <div id="chat-flow" class="chat-container no-scrollbar" onscroll="checkScroll()">
                 <div id="msg-list"></div>
-                <div id="scroll-btn" onclick="goBottom()"><i class="fas fa-chevron-down"></i></div>
-            </div>
+                </div>
+            
+            <div id="scroll-btn" onclick="goBottom()"><i class="fas fa-chevron-down"></i></div>
 
             <div id="reply-bar" class="hidden bg-white p-2 border-l-4 border-green-500 mx-2 mb-1 rounded flex justify-between items-center shadow-sm z-50">
                 <div id="reply-preview-text" class="text-xs text-gray-400 truncate pl-2"></div>
@@ -98,14 +114,13 @@
 
 <div id="media-gallery">
     <header class="h-14 border-b flex items-center px-4 justify-between bg-white">
-        <span class="font-bold text-sm">所有相片</span>
+        <span class="font-bold text-sm">圖片庫</span>
         <i class="fas fa-times text-gray-400 p-2" onclick="document.getElementById('media-gallery').style.display='none'"></i>
     </header>
     <div id="gallery-list" class="gallery-grid flex-1"></div>
 </div>
 
 <div id="overlay" onclick="closeAll()"></div>
-
 <div id="react-bar" class="menu-pop rounded-full p-2 flex gap-1 items-center overflow-hidden">
     <span onclick="react('❤️')" class="text-2xl p-1">❤️</span><span onclick="react('😂')" class="text-2xl p-1">😂</span><span onclick="react('😮')" class="text-2xl p-1">😮</span><span onclick="react('😢')" class="text-2xl p-1">😢</span><span onclick="react('👍')" class="text-2xl p-1">👍</span>
     <i class="fas fa-plus-circle text-gray-300 text-2xl px-2" onclick="react(prompt('Emoji:'))"></i>
@@ -123,18 +138,18 @@
 </div>
 
 <div id="profile-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-2xl z-[4000] w-[85%] hidden shadow-2xl">
-    <h3 class="font-bold mb-4 text-center text-sm">設置對方資料</h3>
-    <input id="set-name" type="text" placeholder="顯示名字" class="w-full border p-3 rounded mb-4 text-sm outline-none">
-    <button class="w-full bg-blue-50 text-blue-600 py-3 rounded mb-2 font-bold text-xs" onclick="document.getElementById('set-avatar').click()">換對方頭像</button>
+    <h3 class="font-bold mb-4 text-center text-sm">設置名字</h3>
+    <input id="set-name" type="text" class="w-full border p-3 rounded mb-4 outline-none">
+    <button class="w-full bg-blue-50 text-blue-600 py-3 rounded mb-2 font-bold text-xs" onclick="document.getElementById('set-avatar').click()">換頭像</button>
     <input type="file" id="set-avatar" class="hidden" onchange="handleAvatar(this)">
     <button class="w-full bg-green-600 text-white py-3 rounded font-bold" onclick="saveProfile()">儲存</button>
 </div>
 
 <div id="bg-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-2xl z-[4000] w-[85%] hidden shadow-2xl">
-    <h3 class="font-bold mb-4 text-center text-sm">背景設定</h3>
-    <button class="w-full bg-gray-100 py-3 rounded mb-4 text-xs" onclick="document.getElementById('bg-file').click()">選取背景圖片</button>
+    <h3 class="font-bold mb-4 text-center text-sm">背景</h3>
+    <button class="w-full bg-gray-100 py-3 rounded mb-4 text-xs" onclick="document.getElementById('bg-file').click()">選相片</button>
     <input type="file" id="bg-file" class="hidden" onchange="handleBG(this)">
-    <input type="range" id="bg-op" min="0.1" max="1" step="0.1" class="w-full accent-green-500" oninput="changeOp(this.value)">
+    <input type="range" id="bg-op" min="0.1" max="1" step="0.1" class="w-full" oninput="changeOp(this.value)">
 </div>
 
 <script>
@@ -146,7 +161,7 @@
     let MY_NAME = urlParams.get('user') || "E";
     let curOtherAvatar = "", selectedID = null, replyData = null, isEditing = false, tempAvatar = null, lastTap = 0, allMedia = [];
 
-    // Slider 邏輯
+    // Slider
     let startX = 0, pageIdx = 0;
     const slider = document.getElementById('main-slider');
     window.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, {passive: true});
@@ -184,28 +199,24 @@
     };
 
     db.ref('chats').on('value', snap => {
-        const list = document.getElementById('msg-list'); let html = "", lastDate = "";
+        const list = document.getElementById('msg-list'); html = ""; lastDate = "";
         allMedia = [];
         snap.forEach(child => {
             const m = child.val(), isMe = m.sender === MY_NAME, id = child.key;
             if(!isMe && !m.seen) db.ref('chats/'+id+'/seen').set(true);
             const d = new Date(m.time).toLocaleDateString();
             if(d !== lastDate) { html += `<div class="text-center my-6"><span class="bg-black/5 text-gray-400 text-[10px] px-2 py-0.5 rounded-full">${d}</span></div>`; lastDate = d; }
-            
             const avatar = !isMe ? `<div class="avatar-box mr-2"><img src="${curOtherAvatar}"></div>` : "";
             const reply = m.replyTo ? `<div class="text-[10px] opacity-40 border-l-2 border-green-500 pl-1 mb-1 truncate">${m.replyTo}</div>` : "";
             const isImg = m.type === 'img';
             if(isImg) allMedia.push(m.data);
-            const content = isImg ? `<img src="${m.data}" onclick="zoomImg('${m.data}')">` : `<span class="msg-text">${m.text}</span>`;
+            const content = isImg ? `<img src="${m.data}" onclick="zoomImg('${m.data}')">` : `<span>${m.text}</span>`;
             const edited = m.edited ? `<span class="text-[9px] opacity-30 ml-1">(已編輯)</span>` : "";
             const seen = (isMe && m.seen) ? `<span class="text-[9px] text-blue-400 font-bold ml-1">已讀</span>` : "";
-            
             html += `<div class="flex ${isMe?'justify-end':'justify-start'} mb-4 px-1 msg-row" onclick="handleDblClick('${id}')">
                 ${avatar}<div class="flex flex-col ${isMe?'items-end':'items-start'}">
                     <div class="flex ${isMe?'flex-row-reverse':'flex-row'} items-end gap-1">
-                        <div class="bubble ${isMe?'bubble-me':'bubble-other'} ${isImg?'img-mode':''}" 
-                             ontouchstart="handleTouchStart(event, '${id}', ${isMe}, '${encodeURIComponent(m.text||"")}')" 
-                             ontouchend="clearTimeout(lp)">
+                        <div class="bubble ${isMe?'bubble-me':'bubble-other'} ${isImg?'img-mode':''}" ontouchstart="handleTouchStart(event, '${id}', ${isMe}, '${encodeURIComponent(m.text||"")}')" ontouchend="clearTimeout(lp)">
                              ${reply}${content}${edited}${m.react ? `<div class="absolute -bottom-2 ${isMe?'left-0':'right-0'} bg-white border rounded-full px-1.5 text-[10px] shadow-sm">${m.react}</div>` : ""}
                         </div>
                         <div class="text-[9px] text-gray-400 flex flex-col items-center">${seen}<span>${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div>
@@ -216,36 +227,32 @@
         list.innerHTML = html; goBottom();
     });
 
-    // --- 修復：Search 功能 ---
+    // --- Search 功能 ---
     function toggleSearch(s) { 
         document.getElementById('search-box').style.display = s ? 'flex' : 'none'; 
-        if(!s) {
-            document.getElementById('search-input').value = "";
-            doSearch(); // 清空時顯示所有
-        }
+        if(!s) { document.getElementById('search-input').value = ""; doSearch(); }
     }
     function doSearch() {
         const val = document.getElementById('search-input').value.toLowerCase();
-        const rows = document.querySelectorAll('.msg-row');
-        rows.forEach(row => {
-            const txt = row.querySelector('.bubble').innerText.toLowerCase();
-            row.style.display = txt.includes(val) ? 'flex' : 'none';
+        document.querySelectorAll('.msg-row').forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(val) ? 'flex' : 'none';
         });
     }
 
-    // --- 修復：置底箭嘴 ---
+    // --- 修正：箭嘴彈出邏輯 ---
     function checkScroll() {
         const f = document.getElementById('chat-flow');
         const btn = document.getElementById('scroll-btn');
-        // 如果向上滑動超過 600px 則顯示箭嘴
-        if (f.scrollHeight - f.scrollTop - f.clientHeight > 600) {
+        // 向上滑過 300px 顯示
+        if (f.scrollHeight - f.scrollTop - f.clientHeight > 300) {
             btn.style.display = 'flex';
         } else {
             btn.style.display = 'none';
         }
     }
 
-    function goBottom() { const f = document.getElementById('chat-flow'); f.scrollTo({ top: f.scrollHeight, behavior: 'smooth' }); }
+    function goBottom() { document.getElementById('chat-flow').scrollTo({ top: 999999, behavior: 'smooth' }); }
+    
     function openGallery() {
         const list = document.getElementById('gallery-list'); list.innerHTML = "";
         allMedia.slice().reverse().forEach(src => { list.innerHTML += `<div class="gallery-item" onclick="zoomImg('${src}')"><img src="${src}"></div>`; });
@@ -277,7 +284,7 @@
     function zoomImg(url) { document.getElementById('full-img').src = url; document.getElementById('photo-viewer').style.display = 'flex'; }
     function sendImage(i) { if(i.files[0]) { const r = new FileReader(); r.onload = e => db.ref('chats').push({ type: 'img', data: e.target.result, sender: MY_NAME, time: Date.now(), seen: false }); r.readAsDataURL(i.files[0]); } }
     function addMemo() { const t = prompt("內容:"); if(t) db.ref('board').push({ text: t, time: Date.now(), user: MY_NAME }); }
-    function clearChat() { if(confirm("⚠️ 確定清空所有紀錄？")) db.ref('chats').remove(); }
+    function clearChat() { if(confirm("⚠️ 清空紀錄？")) db.ref('chats').remove(); }
     function setupEdit() { isEditing = true; const i = document.getElementById('chat-input'); i.value = window.lastSelectedTxt; i.focus(); closeAll(); }
     function setupReply() { replyData = { text: window.lastSelectedTxt || "[圖片]" }; document.getElementById('reply-bar').classList.remove('hidden'); document.getElementById('reply-preview-text').innerText = replyData.text; closeAll(); }
     function cancelReply() { replyData = null; document.getElementById('reply-bar').classList.add('hidden'); isEditing = false; }
