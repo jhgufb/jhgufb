@@ -3,31 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E ² Chat Pro</title>
+    <title>E ² Chat Pro Max</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
-        * { -webkit-tap-highlight-color: transparent; outline: none; -webkit-user-select: none; user-select: none; }
+        * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
         input, textarea { -webkit-user-select: text; user-select: text; font-size: 16px !important; }
         body { font-family: -apple-system, sans-serif; overflow: hidden; background: #f0f2f5; }
         #chat-bg-layer { position: fixed; inset: 0; z-index: -1; background-color: #efe7dd; background-position: center; background-size: cover; transition: opacity 0.3s; }
         .chat-container { height: calc(100vh - 130px); scroll-behavior: smooth; position: relative; overflow-y: auto; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .bubble { max-width: 80%; padding: 8px 12px; font-size: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; margin-bottom: 2px; }
+        
+        /* 訊息泡泡 */
+        .bubble { max-width: 85%; padding: 8px 12px; font-size: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; margin-bottom: 2px; }
         .bubble-me { background-color: #dcf8c6; border-radius: 12px 12px 0 12px; align-self: flex-end; }
         .bubble-other { background-color: #ffffff; border-radius: 12px 12px 12px 0; align-self: flex-start; }
         .sticker-mode { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
-        .media-content { max-width: 180px; border-radius: 8px; display: block; cursor: pointer; }
-        #reaction-bar, #msg-menu { display: none; position: fixed; z-index: 500; background: white; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); border: 1px solid #eee; min-width: 140px; }
-        .heart-react { position: absolute; bottom: -8px; right: 5px; background: white; border-radius: 10px; padding: 1px 5px; font-size: 11px; border: 1px solid #eee; }
+        .media-content { max-width: 180px; border-radius: 8px; display: block; cursor: pointer; transition: opacity 0.2s; }
+        .media-content:active { opacity: 0.7; }
+
+        /* 全螢幕相片預覽 (App 內置) */
+        #photo-viewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; align-items: center; justify-content: center; flex-direction: column; }
+        #full-img { max-width: 95%; max-height: 85%; object-fit: contain; border-radius: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .close-view-btn { position: absolute; top: 30px; right: 25px; color: white; font-size: 24px; cursor: pointer; }
+
+        /* UI 元件 */
+        #reaction-bar { display: none; position: fixed; z-index: 500; background: white; border-radius: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); border: 1px solid #eee; width: 280px; padding: 10px; overflow-x: auto; white-space: nowrap; }
+        #reaction-bar span { font-size: 24px; margin: 0 8px; cursor: pointer; display: inline-block; }
+        .heart-react { position: absolute; bottom: -8px; right: 5px; background: white; border-radius: 10px; padding: 1px 5px; font-size: 11px; border: 1px solid #eee; z-index: 10; }
+        #msg-menu { display: none; position: fixed; z-index: 500; background: white; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); border: 1px solid #eee; min-width: 150px; }
         #pin-container { display: none; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border-bottom: 1px solid #eee; padding: 8px 16px; align-items: center; gap: 10px; z-index: 40; }
-        #search-bar, #media-page { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 56px; background: white; z-index: 1000; align-items: center; padding: 0 16px; }
-        #bg-settings-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 20px; z-index: 1100; width: 85%; max-width: 300px; box-shadow: 0 10px 50px rgba(0,0,0,0.3); }
-        .typing-indicator { display: none; align-self: flex-start; background: rgba(255,255,255,0.7); padding: 6px 12px; border-radius: 12px; margin-bottom: 10px; font-size: 12px; color: #777; }
+        #search-bar, #media-page { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 56px; background: white; z-index: 1000; align-items: center; padding: 0 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        #media-page { height: 100vh; flex-direction: column; align-items: stretch; overflow-y: auto; }
+        #scroll-to-bottom { display: none; position: fixed; bottom: 85px; right: 20px; width: 40px; height: 40px; background: white; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 300; align-items: center; justify-content: center; cursor: pointer; }
         .date-divider { text-align: center; margin: 15px 0; }
-        .date-divider span { background: rgba(0,0,0,0.15); color: white; padding: 2px 10px; border-radius: 10px; font-size: 10px; }
+        .date-divider span { background: rgba(0,0,0,0.15); color: white; padding: 2px 12px; border-radius: 10px; font-size: 11px; }
+        #bg-settings-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 20px; z-index: 1100; width: 85%; max-width: 300px; box-shadow: 0 10px 50px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body class="flex flex-col h-screen max-w-md mx-auto border-x relative">
@@ -35,13 +48,24 @@
     <div id="chat-bg-layer"></div>
     <div id="close-overlay" class="fixed inset-0 z-[400] hidden" onclick="closeAll()"></div>
     
-    <div id="search-bar">
-        <i class="fas fa-arrow-left p-2 cursor-pointer" onclick="toggleSearch(false)"></i>
-        <input id="search-input" type="text" placeholder="搜尋..." class="flex-1 bg-gray-100 rounded-full px-4 mx-2 py-1 text-sm" oninput="doSearch()">
+    <div id="photo-viewer" onclick="this.style.display='none'">
+        <i class="fas fa-times close-view-btn"></i>
+        <img id="full-img" src="">
+        <p class="text-white text-xs mt-4 opacity-50">點擊任何位置返回</p>
     </div>
 
-    <div id="media-page" class="h-full flex-col items-stretch overflow-y-auto">
-        <header class="h-14 border-b flex items-center px-4 bg-white sticky top-0"><i class="fas fa-arrow-left p-2 mr-4 cursor-pointer" onclick="toggleMediaPage(false)"></i><span class="font-bold">媒體庫</span></header>
+    <div id="search-bar">
+        <i class="fas fa-arrow-left text-gray-500 p-2 cursor-pointer" onclick="toggleSearch(false)"></i>
+        <div class="flex-1 flex items-center bg-gray-100 rounded-full px-3 mx-2">
+            <input id="search-input" type="text" placeholder="搜尋..." class="flex-1 bg-transparent outline-none text-sm py-1" oninput="doSearch()">
+            <i id="search-clear" class="fas fa-times-circle text-gray-400 p-1 cursor-pointer hidden" onclick="clearSearch()"></i>
+        </div>
+    </div>
+
+    <div id="media-page">
+        <header class="h-14 border-b flex items-center px-4 bg-white sticky top-0 z-10">
+            <i class="fas fa-arrow-left p-2 mr-4 cursor-pointer" onclick="toggleMediaPage(false)"></i><span class="font-bold">媒體庫</span>
+        </header>
         <div id="media-grid-container" class="grid grid-cols-3 gap-1 p-1"></div>
     </div>
 
@@ -54,10 +78,10 @@
         <button class="w-full mt-4 font-bold text-green-700 pt-4 border-t" onclick="closeAll()">完成</button>
     </div>
 
-    <header class="h-14 border-b flex items-center justify-between px-4 bg-white z-20">
+    <header class="h-14 border-b flex items-center justify-between px-4 bg-white z-20 shadow-sm">
         <div class="flex items-center gap-2">
             <i class="fas fa-pen text-gray-300 text-[10px] cursor-pointer p-1 border rounded" onclick="editNoteName()"></i>
-            <span id="user-display" class="font-bold text-sm">載入中...</span>
+            <span id="user-display" class="font-bold text-sm text-gray-700">載入中...</span>
         </div>
         <div class="flex gap-1">
             <i class="fas fa-palette text-gray-400 p-2 cursor-pointer" onclick="openBgSettings()"></i>
@@ -69,31 +93,36 @@
 
     <div id="pin-container">
         <i class="fas fa-thumbtack text-green-600 text-xs"></i>
-        <div id="pin-text" class="flex-1 text-[12px] font-bold truncate cursor-pointer" onclick="goToPinnedMsg()">載入置頂...</div>
-        <i class="fas fa-chevron-right text-gray-300 text-[10px]" onclick="nextPin()"></i>
+        <div id="pin-text" class="flex-1 text-[12px] font-bold text-green-800 truncate cursor-pointer" onclick="goToPinnedMsg()">載入置頂...</div>
     </div>
+
+    <div id="scroll-to-bottom" onclick="scrollToEnd()"><i class="fas fa-chevron-down text-gray-400"></i></div>
 
     <div id="chat-content" class="chat-container p-4 flex flex-col no-scrollbar">
         <div id="msg-list" class="flex flex-col"></div>
-        <div id="typing-box" class="typing-indicator"><span id="typing-name"></span> 正在輸入...</div>
+        <div id="typing-box" class="typing-indicator" style="display:none;font-size:12px;color:#777;margin-bottom:10px;"><span id="typing-name"></span> 正在輸入...</div>
     </div>
 
-    <div id="reaction-bar" class="p-2 flex gap-3"><span class="text-xl" onclick="addReact('❤️')">❤️</span><span class="text-xl" onclick="addReact('😂')">😂</span><span class="text-xl" onclick="addReact('👍')">👍</span></div>
+    <div id="reaction-bar" class="no-scrollbar">
+        <span onclick="addReact('❤️')">❤️</span><span onclick="addReact('😂')">😂</span><span onclick="addReact('😮')">😮</span><span onclick="addReact('😢')">😢</span><span onclick="addReact('👍')">👍</span>
+        <span onclick="customReact()" class="text-gray-400"><i class="fas fa-plus-circle"></i></span>
+    </div>
+    
     <div id="msg-menu">
-        <div class="p-3 border-b text-sm" onclick="togglePin()">釘選</div>
-        <div id="menu-unsend" class="p-3 border-b text-red-500 text-sm" onclick="executeUnsend()">撤回</div>
-        <div class="p-3 text-blue-600 text-sm" onclick="startReply()">回覆</div>
+        <div class="p-3 border-b text-sm flex items-center gap-2" onclick="togglePin()"><i class="fas fa-thumbtack text-gray-400"></i> 釘選</div>
+        <div id="menu-unsend" class="p-3 border-b text-red-500 text-sm flex items-center gap-2" onclick="executeUnsend()"><i class="fas fa-undo"></i> 撤回</div>
+        <div class="p-3 text-blue-600 text-sm flex items-center gap-2" onclick="startReply()"><i class="fas fa-reply"></i> 回覆</div>
     </div>
 
     <div id="reply-preview" class="hidden p-3 bg-white border-l-4 border-green-500 mx-3 mb-2 rounded shadow-sm relative">
         <div id="reply-text" class="text-xs text-gray-400 truncate"></div>
-        <i class="fas fa-times absolute right-2 top-2 text-gray-300 text-xs" onclick="cancelReply()"></i>
+        <i class="fas fa-times absolute right-2 top-2 text-gray-300 text-xs cursor-pointer" onclick="cancelReply()"></i>
     </div>
 
     <div class="p-3 bg-white flex items-center gap-2 border-t z-30">
         <label class="text-green-600 text-2xl px-1 cursor-pointer"><i class="fas fa-plus-circle"></i><input type="file" id="file-input" class="hidden" onchange="autoProcessFile(this)"></label>
-        <input id="chat-input" class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm" placeholder="輸入訊息..." oninput="updateTypingStatus()">
-        <button onclick="sendMessage()" class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
+        <input id="chat-input" class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm outline-none" placeholder="輸入訊息..." oninput="updateTypingStatus()">
+        <button onclick="sendMessage()" class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md"><i class="fas fa-paper-plane text-sm"></i></button>
     </div>
 
     <script>
@@ -102,14 +131,11 @@
         const db = firebase.database();
         const urlParams = new URLSearchParams(window.location.search);
         let MY_NAME = urlParams.get('user') || "E";
+        let selectedMsg = null, replyTo = null, lastTap = 0, allMsgs = [];
 
-        let selectedMsg = null, replyTo = null, typingTimer, pinnedMsgs = [], currentPinIdx = 0, allMessages = [];
-
-        // 1. 同步名
+        // 1. 改名及背景
         db.ref('notes/display_name').on('value', s => { document.getElementById('user-display').innerText = (s.val()||"E ²") + " (" + MY_NAME + ")"; });
-        function editNoteName() { const n = prompt("改名："); if(n) db.ref('notes/display_name').set(n); }
-
-        // 2. 背景
+        function editNoteName() { const n = prompt("修改備注名："); if(n) db.ref('notes/display_name').set(n); }
         window.onload = () => {
             const b = localStorage.getItem('chat-bg'), o = localStorage.getItem('chat-bg-opacity') || "1";
             if(b) document.getElementById('chat-bg-layer').style.backgroundImage = `url(${b})`;
@@ -120,65 +146,122 @@
         function applyBackground(i) { if(i.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('chat-bg-layer').style.backgroundImage=`url(${e.target.result})`; localStorage.setItem('chat-bg',e.target.result); }; r.readAsDataURL(i.files[0]); } }
         function updateBgOpacity(v) { document.getElementById('chat-bg-layer').style.opacity=v; localStorage.setItem('chat-bg-opacity',v); }
 
-        // 3. Sticker 強化傳送 (加自動縮圖)
+        // 2. Sticker 壓縮
         function autoProcessFile(input) {
             if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
+                const r = new FileReader();
+                r.onload = (e) => {
                     const img = new Image();
                     img.onload = () => {
-                        const canvas = document.createElement('canvas');
+                        const cvs = document.createElement('canvas');
                         let w = img.width, h = img.height, max = 800;
-                        if (w > h) { if (w > max) { h *= max / w; w = max; } } else { if (h > max) { w *= max / h; h = max; } }
-                        canvas.width = w; canvas.height = h;
-                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                        const data = canvas.toDataURL('image/jpeg', 0.6); // 壓縮成 JPEG
-                        db.ref('chats').push({ type:'sticker', data:data, sender:MY_NAME, timestamp:Date.now(), seen:false });
+                        if (w > h) { if (w > max) { h *= max/w; w = max; } } else { if (h > max) { w *= max/h; h = max; } }
+                        cvs.width = w; cvs.height = h;
+                        cvs.getContext('2d').drawImage(img, 0, 0, w, h);
+                        db.ref('chats').push({ type:'sticker', data: cvs.toDataURL('image/jpeg', 0.6), sender:MY_NAME, timestamp:Date.now(), seen:false });
                         input.value = "";
                     };
                     img.src = e.target.result;
                 };
-                reader.readAsDataURL(input.files[0]);
+                r.readAsDataURL(input.files[0]);
             }
         }
 
-        // 4. 訊息監聽
+        // 3. 內置放大預覽
+        function zoomImg(src) {
+            const viewer = document.getElementById('photo-viewer');
+            const fullImg = document.getElementById('full-img');
+            fullImg.src = src;
+            viewer.style.display = 'flex';
+        }
+
+        // 4. 訊息核心監聽
         db.ref('chats').on('value', snap => {
             const list = document.getElementById('msg-list');
-            let html = "", lastD = ""; allMessages = [];
+            let html = "", lastD = ""; allMsgs = [];
             snap.forEach(c => {
-                const m = c.val(); allMessages.push(m);
-                if (m.sender !== MY_NAME && !m.seen) db.ref('chats/'+c.key).update({seen:true});
+                const m = c.val(); m.id = c.key; allMsgs.push(m);
+                const isMe = m.sender === MY_NAME, isS = m.type === 'sticker';
+                if (!isMe && !m.seen) db.ref('chats/'+c.key).update({seen:true});
                 const d = new Date(m.timestamp).toLocaleDateString();
                 if(d !== lastD) { html += `<div class="date-divider"><span>${d}</span></div>`; lastD = d; }
-                const isMe = m.sender === MY_NAME, isSticker = m.type === 'sticker';
-                const content = m.type === 'text' ? `<span>${m.text}</span>` : `<img src="${m.data}" class="media-content" onclick="zoomImg('${m.data}')">`;
+                const content = isS ? `<img src="${m.data}" class="media-content" onclick="event.stopPropagation(); zoomImg('${m.data}')">` : `<span>${m.text}</span>`;
                 const reply = m.replyTo ? `<div class="text-[10px] opacity-40 border-l-2 border-green-500 pl-1 mb-1">${m.replyTo.text}</div>` : "";
                 const seen = isMe ? (m.seen ? '<i class="fas fa-check-double text-blue-400 ml-1"></i>' : '<i class="fas fa-check ml-1"></i>') : "";
-                html += `<div id="msg-${c.key}" class="msg-wrapper flex flex-col ${isMe?'items-end':'items-start'} mb-3 px-2" ontouchstart="handleStart('${c.key}','${m.sender}','${encodeURIComponent(m.text||"")}', event)" ontouchend="clearTimeout(window.lp)"><div class="flex ${isMe?'flex-row':'flex-row-reverse'} items-end gap-1"><span class="text-[9px] text-gray-400">${new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span><div class="bubble ${isMe?'bubble-me':'bubble-other'} ${isSticker?'sticker-mode':''}">${reply}${content}${m.reaction?`<div class="heart-react">${m.reaction}</div>`:""}</div></div><div class="text-[9px]">${seen}</div></div>`;
+                html += `<div id="msg-${c.key}" class="msg-wrapper flex flex-col ${isMe?'items-end':'items-start'} mb-3 px-2" 
+                         onclick="handleMsgClick('${c.key}', event)" ontouchstart="handleStart('${c.key}','${m.sender}','${encodeURIComponent(m.text||"")}', event)" ontouchend="clearTimeout(window.lp)">
+                         <div class="flex ${isMe?'flex-row':'flex-row-reverse'} items-end gap-1">
+                         <span class="text-[9px] text-gray-400">${new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+                         <div class="bubble ${isMe?'bubble-me':'bubble-other'} ${isS?'sticker-mode':''}">
+                         ${reply}${content}${m.reaction?`<div class="heart-react">${m.reaction}</div>`:""}
+                         </div></div><div class="text-[9px] h-3">${seen}</div></div>`;
             });
             list.innerHTML = html;
-            document.getElementById('chat-content').scrollTop = document.getElementById('chat-content').scrollHeight;
+            scrollToEnd();
         });
 
-        // 5. 基礎功能
-        function sendMessage() { const i=document.getElementById('chat-input'); if(i.value.trim()||replyTo){ db.ref('chats').push({type:'text',text:i.value,sender:MY_NAME,timestamp:Date.now(),seen:false,replyTo:replyTo}); i.value=""; cancelReply(); db.ref('typing/'+MY_NAME).set(false); } }
-        function handleStart(id,s,t,e) { selectedMsg={id,sender:s,text:decodeURIComponent(t)||"[相片]"}; window.lp=setTimeout(()=>{ const r=e.touches[0]; document.getElementById('close-overlay').style.display='block'; document.getElementById('reaction-bar').style.display='flex'; document.getElementById('reaction-bar').style.top=(r.clientY-90)+'px'; document.getElementById('msg-menu').style.display='block'; document.getElementById('msg-menu').style.top=(r.clientY+10)+'px'; document.getElementById('menu-unsend').style.display=(s===MY_NAME)?'flex':'none'; if(navigator.vibrate)navigator.vibrate(40); },600); }
+        // 5. 互動邏輯 (Double Tap ❤️ / 長按)
+        function handleMsgClick(id, e) {
+            const now = Date.now();
+            if (now - lastTap < 300) {
+                db.ref('chats/'+id).update({reaction:'❤️'});
+                if(navigator.vibrate) navigator.vibrate(50);
+            }
+            lastTap = now;
+        }
+
+        function handleStart(id, s, t, e) {
+            selectedMsg = {id, sender:s, text:decodeURIComponent(t)||"[相片]"};
+            window.lp = setTimeout(() => {
+                const r = (e.touches) ? e.touches[0] : e;
+                document.getElementById('close-overlay').style.display = 'block';
+                const bar = document.getElementById('reaction-bar');
+                bar.style.display = 'block';
+                bar.style.top = (r.clientY - 110) + 'px';
+                bar.style.left = '50%'; bar.style.transform = 'translateX(-50%)';
+                const menu = document.getElementById('msg-menu');
+                menu.style.display = 'block';
+                menu.style.top = (r.clientY + 10) + 'px';
+                menu.style.left = r.clientX > 200 ? (r.clientX-150)+'px' : r.clientX+'px';
+                document.getElementById('menu-unsend').style.display = (s===MY_NAME)?'flex':'none';
+                if(navigator.vibrate) navigator.vibrate(40);
+            }, 600);
+        }
+
+        // 6. 基礎 UI 函數
         function closeAll() { document.getElementById('msg-menu').style.display='none'; document.getElementById('reaction-bar').style.display='none'; document.getElementById('close-overlay').style.display='none'; document.getElementById('bg-settings-modal').style.display='none'; }
         function addReact(emo) { if(selectedMsg) db.ref('chats/'+selectedMsg.id).update({reaction:emo}); closeAll(); }
+        function customReact() { const emo = prompt("輸入 Emoji 或文字："); if(emo) addReact(emo); }
         function executeUnsend() { if(selectedMsg) db.ref('chats/'+selectedMsg.id).remove(); closeAll(); }
         function startReply() { replyTo={text:selectedMsg.text}; document.getElementById('reply-preview').style.display='block'; document.getElementById('reply-text').innerText=replyTo.text; closeAll(); }
         function cancelReply() { replyTo=null; document.getElementById('reply-preview').style.display='none'; }
-        function toggleSearch(s) { document.getElementById('search-bar').style.display=s?'flex':'none'; }
-        function doSearch() { const v=document.getElementById('search-input').value.toLowerCase(); document.querySelectorAll('.msg-wrapper').forEach(w=>{ w.style.display=w.innerText.toLowerCase().includes(v)?'flex':'none'; }); }
-        function toggleMediaPage(s) { document.getElementById('media-page').style.display=s?'flex':'none'; if(s){ const g=document.getElementById('media-grid-container'); g.innerHTML=""; allMessages.filter(m=>m.type==='sticker').reverse().forEach(m=>g.innerHTML+=`<img src="${m.data}" class="aspect-square object-cover" onclick="zoomImg('${m.data}')">`); } }
-        function zoomImg(s) { window.open(s); }
-        function updateTypingStatus() { db.ref('typing/'+MY_NAME).set(true); clearTimeout(typingTimer); typingTimer=setTimeout(()=>db.ref('typing/'+MY_NAME).set(false),2000); }
-        db.ref('typing').on('value', snap => { let s=false; for(let u in snap.val()){ if(u!==MY_NAME && snap.val()[u]){ document.getElementById('typing-name').innerText=u; s=true; break; } } document.getElementById('typing-box').style.display=s?'block':'none'; });
-        db.ref('pins').on('value', snap => { pinnedMsgs=[]; snap.forEach(c=>pinnedMsgs.push({id:c.key,...c.val()})); document.getElementById('pin-container').style.display=pinnedMsgs.length?'flex':'none'; if(pinnedMsgs.length) document.getElementById('pin-text').innerText=pinnedMsgs[0].text; });
+        function sendMessage() { const i=document.getElementById('chat-input'); if(i.value.trim()||replyTo){ db.ref('chats').push({type:'text',text:i.value,sender:MY_NAME,timestamp:Date.now(),seen:false,replyTo:replyTo}); i.value=""; cancelReply(); db.ref('typing/'+MY_NAME).set(false); } }
+
+        // 7. 搜尋及媒體庫
+        function toggleSearch(s) { document.getElementById('search-bar').style.display=s?'flex':'none'; if(!s) clearSearch(); }
+        function doSearch() { const v=document.getElementById('search-input').value.toLowerCase(); document.getElementById('search-clear').style.display=v?'block':'none'; document.querySelectorAll('.msg-wrapper').forEach(w=>{ w.style.display=w.innerText.toLowerCase().includes(v)?'flex':'none'; }); }
+        function clearSearch() { document.getElementById('search-input').value=""; doSearch(); }
+
+        function toggleMediaPage(s) { 
+            document.getElementById('media-page').style.display=s?'flex':'none'; 
+            if(s){ 
+                const g=document.getElementById('media-grid-container'); g.innerHTML=""; 
+                allMsgs.filter(m=>m.type==='sticker').reverse().forEach(m=>g.innerHTML+=`<img src="${m.data}" class="aspect-square object-cover w-full" onclick="zoomImg('${m.data}')">`);
+            } 
+        }
+
+        // 8. 置頂與清空
+        db.ref('pins').on('value', snap => { let p=[]; snap.forEach(c=>p.push({id:c.key,...c.val()})); document.getElementById('pin-container').style.display=p.length?'flex':'none'; if(p.length) document.getElementById('pin-text').innerText=p[0].text; });
         function togglePin() { if(selectedMsg) db.ref('pins/'+selectedMsg.id).set({text:selectedMsg.text}); closeAll(); }
-        function goToPinnedMsg() { const el=document.getElementById('msg-'+pinnedMsgs[0].id); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }
-        function clearAllHistory() { if(confirm("清空？")) db.ref().remove(); }
+        function goToPinnedMsg() { db.ref('pins').once('value', s=>{ if(s.exists()){ const id = Object.keys(s.val())[0]; const el=document.getElementById('msg-'+id); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }}); }
+        function clearAllHistory() { if(confirm("⚠️ 確定要清空嗎？所有紀錄將無法復原。")) db.ref().remove(); }
+
+        // 9. 滾動與輸入中
+        const chatBox = document.getElementById('chat-content');
+        function scrollToEnd() { chatBox.scrollTop = chatBox.scrollHeight; }
+        chatBox.addEventListener('scroll', () => { document.getElementById('scroll-to-bottom').style.display=(chatBox.scrollTop < chatBox.scrollHeight-1000)?'flex':'none'; });
+        function updateTypingStatus() { db.ref('typing/'+MY_NAME).set(true); clearTimeout(window.tT); window.tT=setTimeout(()=>db.ref('typing/'+MY_NAME).set(false),2000); }
+        db.ref('typing').on('value', snap => { let s=false; for(let u in snap.val()){ if(u!==MY_NAME && snap.val()[u]){ document.getElementById('typing-name').innerText=u; s=true; break; } } document.getElementById('typing-box').style.display=s?'block':'none'; });
     </script>
 </body>
 </html>
