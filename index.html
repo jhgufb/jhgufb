@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E ² Chat Pro Elite</title>
+    <title>E ² Chat Ultimate Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -28,16 +28,17 @@
         .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
 
         #close-overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: transparent; }
-        #reaction-bar { display: none; position: fixed; z-index: 3000; background: white; border-radius: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 280px; padding: 10px; white-space: nowrap; }
+        #reaction-bar { display: none; position: fixed; z-index: 3000; background: white; border-radius: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 280px; padding: 10px; white-space: nowrap; align-items: center; justify-content: center; }
+        #reaction-bar span { font-size: 22px; margin: 0 6px; cursor: pointer; }
         #msg-menu { display: none; position: fixed; z-index: 3000; background: white; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); min-width: 160px; }
         
         #photo-viewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9000; align-items: center; justify-content: center; }
         #media-page { display: none; position: fixed; inset: 0; background: white; z-index: 8000; flex-direction: column; }
+        #scroll-to-bottom { display: none; position: fixed; bottom: 85px; right: 20px; width: 42px; height: 42px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; align-items: center; justify-content: center; color: #999; }
 
-        #scroll-to-bottom { display: none; position: fixed; bottom: 85px; right: 20px; width: 42px; height: 42px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; align-items: center; justify-content: center; cursor: pointer; color: #999; }
         .date-divider { text-align: center; margin: 15px 0; width: 100%; }
         .date-divider span { background: rgba(0,0,0,0.15); color: white; padding: 2px 12px; border-radius: 10px; font-size: 11px; }
-        .heart-react { position: absolute; bottom: -8px; right: 5px; background: white; border-radius: 10px; padding: 1px 5px; font-size: 11px; border: 1px solid #eee; }
+        .heart-react { position: absolute; bottom: -8px; right: 5px; background: white; border-radius: 10px; padding: 1px 5px; font-size: 11px; border: 1px solid #eee; z-index: 10; }
 
         #bg-settings-modal, #profile-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 20px; z-index: 4000; width: 85%; max-width: 300px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
     </style>
@@ -62,15 +63,12 @@
 
     <div id="search-bar" class="hidden absolute top-0 left-0 w-full h-14 bg-white z-[1500] flex items-center px-4 border-b">
         <i class="fas fa-arrow-left text-gray-500 p-2" onclick="toggleSearch(false)"></i>
-        <input id="search-input" type="text" placeholder="搜尋訊息..." class="flex-1 bg-gray-100 rounded-full px-4 py-1 mx-2 outline-none text-sm" oninput="doSearch()">
+        <input id="search-input" type="text" placeholder="搜尋..." class="flex-1 bg-gray-100 rounded-full px-4 py-1 mx-2 outline-none text-sm" oninput="doSearch()">
         <i class="fas fa-times-circle text-gray-300 p-2" onclick="clearSearch()"></i>
     </div>
 
     <div id="media-page">
-        <header class="h-14 border-b flex items-center px-4 bg-white sticky top-0">
-            <i class="fas fa-arrow-left p-2 mr-4" onclick="toggleMediaPage(false)"></i>
-            <span class="font-bold">圖片庫</span>
-        </header>
+        <header class="h-14 border-b flex items-center px-4 bg-white sticky top-0"><i class="fas fa-arrow-left p-2 mr-4" onclick="toggleMediaPage(false)"></i><span class="font-bold">圖片庫</span></header>
         <div id="media-grid" class="grid grid-cols-3 gap-1 p-1 overflow-y-auto flex-1"></div>
     </div>
 
@@ -81,9 +79,11 @@
 
     <div id="scroll-to-bottom" onclick="scrollToEnd()"><i class="fas fa-chevron-down"></i></div>
 
-    <div id="reaction-bar" class="no-scrollbar">
+    <div id="reaction-bar">
         <span onclick="addReact('❤️')">❤️</span><span onclick="addReact('😂')">😂</span><span onclick="addReact('😮')">😮</span><span onclick="addReact('😢')">😢</span><span onclick="addReact('👍')">👍</span>
+        <span onclick="customReact()" class="text-gray-300 text-xl ml-2"><i class="fas fa-plus-circle"></i></span>
     </div>
+
     <div id="msg-menu" class="text-sm">
         <div id="menu-unsend" class="p-4 border-b text-red-500 font-medium" onclick="executeUnsend()">撤回</div>
         <div class="p-4 text-blue-600 font-medium" onclick="startReply()">回覆</div>
@@ -100,14 +100,12 @@
         <button onclick="sendMessage()" class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-sm"><i class="fas fa-paper-plane text-sm"></i></button>
     </div>
 
-    <div id="photo-viewer" onclick="this.style.display='none'">
-        <img id="full-img" src="" class="max-w-[95%] max-h-[80%] object-contain">
-    </div>
+    <div id="photo-viewer" onclick="this.style.display='none'"><img id="full-img" src="" class="max-w-[95%] max-h-[80%] object-contain"></div>
 
     <div id="profile-modal">
         <h3 class="font-bold mb-4 text-center">設置資料</h3>
         <input id="profile-name-input" type="text" placeholder="顯示名字" class="w-full border rounded-lg p-2 mb-4 text-sm outline-none">
-        <button class="w-full bg-blue-500 text-white py-2 rounded-lg mb-4 text-sm" onclick="document.getElementById('avatar-input').click()">從相簿選取對方頭像</button>
+        <button class="w-full bg-blue-500 text-white py-2 rounded-lg mb-4 text-sm" onclick="document.getElementById('avatar-input').click()">選取對方頭像</button>
         <input type="file" id="avatar-input" class="hidden" accept="image/*" onchange="processAvatar(this)">
         <div id="avatar-preview-box" class="flex justify-center mb-4 hidden"><img id="avatar-preview-img" src="" class="w-16 h-16 rounded-lg object-cover border"></div>
         <button class="w-full mt-2 bg-green-600 text-white py-2 rounded-lg font-bold" onclick="saveProfile()">儲存</button>
@@ -116,7 +114,7 @@
 
     <div id="bg-settings-modal">
         <h3 class="font-bold mb-4 text-center">聊天背景</h3>
-        <button class="w-full bg-green-600 text-white py-2 rounded-lg mb-4 text-sm" onclick="document.getElementById('bg-input').click()">選取背景</button>
+        <button class="w-full bg-green-600 text-white py-2 rounded-lg mb-4 text-sm" onclick="document.getElementById('bg-input').click()">從相簿選取</button>
         <input type="file" id="bg-input" class="hidden" accept="image/*" onchange="applyBackground(this)">
         <input type="range" id="bg-opacity-slider" min="0.1" max="1" step="0.05" class="w-full accent-green-600" oninput="updateBgOpacity(this.value)">
         <button class="w-full mt-4 font-bold text-green-700 pt-4 border-t" onclick="closeAll()">完成</button>
@@ -129,7 +127,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         let MY_NAME = urlParams.get('user') || "E", selectedMsg = null, replyTo = null, lastTap = 0, otherAvatar = "", tempAvatarBase64 = "", allMessages = [];
 
-        // 背景
         window.onload = () => {
             const b = localStorage.getItem('chat-bg'), o = localStorage.getItem('chat-bg-opacity') || "1";
             if(b) document.getElementById('chat-bg-layer').style.backgroundImage = `url(${b})`;
@@ -168,15 +165,11 @@
                 allMessages.push(m);
                 const isMe = m.sender === MY_NAME;
                 if (!isMe && !m.seen) db.ref('chats/'+c.key).update({seen:true});
-                
                 const d = new Date(m.timestamp).toLocaleDateString();
                 if(d !== lastD) { html += `<div class="date-divider"><span>${d}</span></div>`; lastD = d; }
-                
                 const content = m.type === 'sticker' ? `<img src="${m.data}" class="media-content" onclick="zoomImg('${m.data}')">` : `<span>${m.text}</span>`;
                 const reply = m.replyTo ? `<div class="text-[10px] opacity-40 border-l-2 border-green-500 pl-1 mb-1 truncate cursor-pointer" onclick="scrollToOriginal('${m.replyTo.id}')">${m.replyTo.text}</div>` : "";
                 const avatar = !isMe ? `<div class="avatar-box"><img src="${otherAvatar}"></div>` : "";
-                
-                // 藍剔邏輯
                 const seenIcon = isMe ? (m.seen ? '<i class="fas fa-check-double text-blue-400 ml-1"></i>' : '<i class="fas fa-check text-gray-300 ml-1"></i>') : "";
 
                 html += `
@@ -192,7 +185,7 @@
                                 ${reply}${content}${m.reaction?`<div class="heart-react">${m.reaction}</div>`:""}
                             </div>
                         </div>
-                        <div class="text-[9px] leading-none h-2 mt-0.5">${seenIcon}</div>
+                        <div class="text-[9px] h-2 mt-0.5">${seenIcon}</div>
                     </div>
                 </div>`;
             });
@@ -206,11 +199,16 @@
                 const r = e.touches[0];
                 document.getElementById('close-overlay').style.display = 'block';
                 const bar = document.getElementById('reaction-bar'), menu = document.getElementById('msg-menu');
-                bar.style.display = 'block'; bar.style.top = (r.clientY - 110) + 'px'; bar.style.left = '50%'; bar.style.transform = 'translateX(-50%)';
+                bar.style.display = 'flex'; bar.style.top = (r.clientY - 110) + 'px'; bar.style.left = '50%'; bar.style.transform = 'translateX(-50%)';
                 menu.style.display = 'block'; menu.style.top = (r.clientY + 10) + 'px'; menu.style.left = (r.clientX > 200 ? r.clientX - 140 : r.clientX) + 'px';
                 document.getElementById('menu-unsend').style.display = (s===MY_NAME)?'block':'none';
                 if(navigator.vibrate) navigator.vibrate(50);
             }, 600);
+        }
+
+        function customReact() {
+            const emo = prompt("請輸入你想 Reaction 的文字或 Emoji：");
+            if (emo) addReact(emo);
         }
 
         function sendMessage() {
@@ -225,37 +223,19 @@
             const page = document.getElementById('media-page');
             page.style.display = show ? 'flex' : 'none';
             if (show) {
-                const grid = document.getElementById('media-grid');
-                grid.innerHTML = "";
+                const grid = document.getElementById('media-grid'); grid.innerHTML = "";
                 allMessages.filter(m => m.type === 'sticker').reverse().forEach(m => {
                     grid.innerHTML += `<img src="${m.data}" class="aspect-square object-cover w-full cursor-pointer" onclick="zoomImg('${m.data}')">`;
                 });
             }
         }
-
-        function toggleSearch(show) {
-            document.getElementById('search-bar').classList.toggle('hidden', !show);
-            if (!show) clearSearch();
-        }
-
-        function clearSearch() {
-            document.getElementById('search-input').value = "";
-            doSearch();
-        }
-
+        function toggleSearch(show) { document.getElementById('search-bar').classList.toggle('hidden', !show); if (!show) clearSearch(); }
+        function clearSearch() { document.getElementById('search-input').value = ""; doSearch(); }
         function doSearch() {
             const val = document.getElementById('search-input').value.toLowerCase();
-            document.querySelectorAll('.msg-wrapper').forEach(w => {
-                w.style.display = w.innerText.toLowerCase().includes(val) ? 'flex' : 'none';
-            });
+            document.querySelectorAll('.msg-wrapper').forEach(w => { w.style.display = w.innerText.toLowerCase().includes(val) ? 'flex' : 'none'; });
         }
-
-        function clearAllHistory() {
-            if (confirm("⚠️ 注意：呢個動作會清空所有對話紀錄，確定要繼續？")) {
-                db.ref('chats').remove();
-            }
-        }
-
+        function clearAllHistory() { if (confirm("⚠️ 確定清空所有紀錄？")) db.ref('chats').remove(); }
         function startReply() { replyTo={id:selectedMsg.id, text:selectedMsg.text||"[圖片]"}; document.getElementById('reply-preview').style.display='block'; document.getElementById('reply-text').innerText=replyTo.text; closeAll(); }
         function cancelReply() { replyTo=null; document.getElementById('reply-preview').style.display='none'; }
         function addReact(emo) { if(selectedMsg) db.ref('chats/'+selectedMsg.id).update({reaction:emo}); closeAll(); }
@@ -266,61 +246,44 @@
         function zoomImg(s) { document.getElementById('full-img').src=s; document.getElementById('photo-viewer').style.display='flex'; }
         function applyBackground(i) { if(i.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('chat-bg-layer').style.backgroundImage=`url(${e.target.result})`; localStorage.setItem('chat-bg',e.target.result); }; r.readAsDataURL(i.files[0]); } }
         function updateBgOpacity(v) { document.getElementById('chat-bg-layer').style.opacity=v; localStorage.setItem('chat-bg-opacity',v); }
-        
-        function processAvatar(input) {
-            if (input.files[0]) {
-                const r = new FileReader();
-                r.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const cvs = document.createElement('canvas');
-                        cvs.width = 200; cvs.height = 200;
-                        const min = Math.min(img.width, img.height);
-                        cvs.getContext('2d').drawImage(img, (img.width-min)/2, (img.height-min)/2, min, min, 0, 0, 200, 200);
-                        tempAvatarBase64 = cvs.toDataURL('image/jpeg', 0.8);
-                        document.getElementById('avatar-preview-box').classList.remove('hidden');
-                        document.getElementById('avatar-preview-img').src = tempAvatarBase64;
-                    };
-                    img.src = e.target.result;
-                };
-                r.readAsDataURL(input.files[0]);
-            }
-        }
-        function saveProfile() {
-            const updates = { name: document.getElementById('profile-name-input').value || "E ²" };
-            if (tempAvatarBase64) updates.avatar = tempAvatarBase64;
-            db.ref('notes/profile').update(updates);
-            closeAll();
-        }
-        function autoProcessFile(input) {
-            if (input.files[0]) {
-                const r = new FileReader();
-                r.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const cvs = document.createElement('canvas');
-                        let w = img.width, h = img.height, max = 800;
-                        if (w > h) { if (w > max) { h *= max/w; w = max; } } else { if (h > max) { w *= max/h; h = max; } }
-                        cvs.width = w; cvs.height = h;
-                        cvs.getContext('2d').drawImage(img, 0, 0, w, h);
-                        db.ref('chats').push({ type:'sticker', data: cvs.toDataURL('image/jpeg', 0.6), sender:MY_NAME, timestamp:Date.now(), seen:false });
-                        input.value = "";
-                    };
-                    img.src = e.target.result;
-                };
-                r.readAsDataURL(input.files[0]);
-            }
-        }
-        function handleMsgClick(id) {
-            const now = Date.now();
-            if (now - lastTap < 300) { db.ref('chats/'+id).update({reaction:'❤️'}); }
-            lastTap = now;
-        }
+        function handleMsgClick(id) { const now = Date.now(); if (now - lastTap < 300) { db.ref('chats/'+id).update({reaction:'❤️'}); } lastTap = now; }
         function updateTypingStatus() { db.ref('typing/'+MY_NAME).set(true); setTimeout(()=>db.ref('typing/'+MY_NAME).set(false),2000); }
         db.ref('typing').on('value', snap => {
             let s=false; for(let u in snap.val()){ if(u!==MY_NAME && snap.val()[u]){ s=true; break; } }
             document.getElementById('typing-box').style.display=s?'block':'none';
         });
+        function processAvatar(input) {
+            if (input.files[0]) {
+                const r = new FileReader(); r.onload = (e) => {
+                    const img = new Image(); img.onload = () => {
+                        const cvs = document.createElement('canvas'); cvs.width = 200; cvs.height = 200;
+                        const min = Math.min(img.width, img.height);
+                        cvs.getContext('2d').drawImage(img, (img.width-min)/2, (img.height-min)/2, min, min, 0, 0, 200, 200);
+                        tempAvatarBase64 = cvs.toDataURL('image/jpeg', 0.8);
+                        document.getElementById('avatar-preview-box').classList.remove('hidden');
+                        document.getElementById('avatar-preview-img').src = tempAvatarBase64;
+                    }; img.src = e.target.result;
+                }; r.readAsDataURL(input.files[0]);
+            }
+        }
+        function saveProfile() {
+            const updates = { name: document.getElementById('profile-name-input').value || "E ²" };
+            if (tempAvatarBase64) updates.avatar = tempAvatarBase64;
+            db.ref('notes/profile').update(updates); closeAll();
+        }
+        function autoProcessFile(input) {
+            if (input.files[0]) {
+                const r = new FileReader(); r.onload = (e) => {
+                    const img = new Image(); img.onload = () => {
+                        const cvs = document.createElement('canvas'); let w = img.width, h = img.height, max = 800;
+                        if (w > h) { if (w > max) { h *= max/w; w = max; } } else { if (h > max) { w *= max/h; h = max; } }
+                        cvs.width = w; cvs.height = h; cvs.getContext('2d').drawImage(img, 0, 0, w, h);
+                        db.ref('chats').push({ type:'sticker', data: cvs.toDataURL('image/jpeg', 0.6), sender:MY_NAME, timestamp:Date.now(), seen:false });
+                        input.value = "";
+                    }; img.src = e.target.result;
+                }; r.readAsDataURL(input.files[0]);
+            }
+        }
     </script>
 </body>
 </html>
