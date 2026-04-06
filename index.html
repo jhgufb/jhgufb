@@ -17,27 +17,26 @@
         .chat-container { height: calc(100vh - 130px); scroll-behavior: smooth; position: relative; overflow-y: auto; z-index: 10; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* 訊息樣式 */
         .bubble { max-width: 80%; padding: 8px 12px; font-size: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; margin-bottom: 2px; transition: background-color 0.5s; }
         .bubble-me { background-color: #dcf8c6; border-radius: 12px 12px 0 12px; align-self: flex-end; }
         .bubble-other { background-color: #ffffff; border-radius: 0 12px 12px 12px; align-self: flex-start; }
         .sticker-mode { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
         .media-content { max-width: 180px; border-radius: 8px; display: block; cursor: pointer; pointer-events: auto !important; }
         
-        /* 閃爍效果 */
         .highlight-flash { background-color: #fff3cd !important; }
-
         .avatar-box { width: 38px; height: 38px; min-width: 38px; border-radius: 8px; overflow: hidden; margin-right: 8px; align-self: flex-start; border: 1px solid #eee; background: #fff; }
         .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* 選單與彈窗 */
         #close-overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: transparent; }
         #reaction-bar { display: none; position: fixed; z-index: 3000; background: white; border-radius: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 280px; padding: 10px; white-space: nowrap; }
         #msg-menu { display: none; position: fixed; z-index: 3000; background: white; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); min-width: 160px; }
         #bg-settings-modal, #profile-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 20px; z-index: 4000; width: 85%; max-width: 300px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
         
         #photo-viewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9000; align-items: center; justify-content: center; }
-        #scroll-to-bottom { display: none; position: fixed; bottom: 85px; right: 20px; width: 42px; height: 42px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; align-items: center; justify-content: center; color: #999; }
+        
+        /* 置底箭嘴掣 */
+        #scroll-to-bottom { display: none; position: fixed; bottom: 85px; right: 20px; width: 42px; height: 42px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; align-items: center; justify-content: center; cursor: pointer; color: #999; }
+
         .date-divider { text-align: center; margin: 15px 0; width: 100%; }
         .date-divider span { background: rgba(0,0,0,0.15); color: white; padding: 2px 12px; border-radius: 10px; font-size: 11px; }
         .heart-react { position: absolute; bottom: -8px; right: 5px; background: white; border-radius: 10px; padding: 1px 5px; font-size: 11px; border: 1px solid #eee; }
@@ -121,13 +120,15 @@
         const urlParams = new URLSearchParams(window.location.search);
         let MY_NAME = urlParams.get('user') || "E", selectedMsg = null, replyTo = null, lastTap = 0, otherAvatar = "", tempAvatarBase64 = "";
 
-        // --- 核心邏輯 ---
-        db.ref('notes/profile').on('value', s => { 
-            const data = s.val() || {};
-            document.getElementById('user-display').innerText = (data.name || "E ²") + " (" + MY_NAME + ")";
-            otherAvatar = data.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-        });
+        // --- 初始化背景 ---
+        window.onload = () => {
+            const b = localStorage.getItem('chat-bg'), o = localStorage.getItem('chat-bg-opacity') || "1";
+            if(b) document.getElementById('chat-bg-layer').style.backgroundImage = `url(${b})`;
+            document.getElementById('chat-bg-layer').style.opacity = o;
+            document.getElementById('bg-opacity-slider').value = o;
+        };
 
+        // --- 跳轉原始訊息 ---
         function scrollToOriginal(id) {
             const el = document.getElementById('msg-' + id);
             if (el) {
@@ -138,6 +139,26 @@
             }
         }
 
+        // --- 滑動監聽 (顯示/隱藏底部粒掣) ---
+        const chatBox = document.getElementById('chat-content');
+        chatBox.addEventListener('scroll', () => {
+            const btn = document.getElementById('scroll-to-bottom');
+            if (chatBox.scrollTop < chatBox.scrollHeight - 1000) {
+                btn.style.display = 'flex';
+            } else {
+                btn.style.display = 'none';
+            }
+        });
+
+        function scrollToEnd() { chatBox.scrollTop = chatBox.scrollHeight; }
+
+        // --- Firebase 監聽 ---
+        db.ref('notes/profile').on('value', s => { 
+            const data = s.val() || {};
+            document.getElementById('user-display').innerText = (data.name || "E ²") + " (" + MY_NAME + ")";
+            otherAvatar = data.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+        });
+
         db.ref('chats').on('value', snap => {
             const list = document.getElementById('msg-list');
             let html = "", lastD = "";
@@ -145,10 +166,8 @@
                 const m = c.val(); m.id = c.key;
                 const isMe = m.sender === MY_NAME;
                 if (!isMe && !m.seen) db.ref('chats/'+c.key).update({seen:true});
-                
                 const d = new Date(m.timestamp).toLocaleDateString();
                 if(d !== lastD) { html += `<div class="date-divider"><span>${d}</span></div>`; lastD = d; }
-                
                 const content = m.type === 'sticker' ? `<img src="${m.data}" class="media-content" onclick="zoomImg('${m.data}')">` : `<span>${m.text}</span>`;
                 const reply = m.replyTo ? `<div class="text-[10px] opacity-40 border-l-2 border-green-500 pl-1 mb-1 truncate cursor-pointer" onclick="scrollToOriginal('${m.replyTo.id}')">${m.replyTo.text}</div>` : "";
                 const avatar = !isMe ? `<div class="avatar-box"><img src="${otherAvatar}"></div>` : "";
@@ -173,7 +192,7 @@
             scrollToEnd();
         });
 
-        // --- 功能函數 ---
+        // --- 其他互動邏輯 ---
         function handleStart(id, s, t, e) {
             selectedMsg = {id, sender:s, text:decodeURIComponent(t)};
             window.lp = setTimeout(() => {
@@ -193,13 +212,11 @@
                 i.value = ""; cancelReply();
             }
         }
-
         function startReply() { replyTo={id:selectedMsg.id, text:selectedMsg.text||"[圖片]"}; document.getElementById('reply-preview').style.display='block'; document.getElementById('reply-text').innerText=replyTo.text; closeAll(); }
         function cancelReply() { replyTo=null; document.getElementById('reply-preview').style.display='none'; }
         function addReact(emo) { if(selectedMsg) db.ref('chats/'+selectedMsg.id).update({reaction:emo}); closeAll(); }
         function executeUnsend() { if(selectedMsg) db.ref('chats/'+selectedMsg.id).remove(); closeAll(); }
         function closeAll() { ['msg-menu','reaction-bar','close-overlay','bg-settings-modal','profile-modal'].forEach(id=>document.getElementById(id).style.display='none'); }
-        function scrollToEnd() { const c = document.getElementById('chat-content'); c.scrollTop = c.scrollHeight; }
         function openProfileModal() { document.getElementById('profile-modal').style.display='block'; document.getElementById('close-overlay').style.display='block'; }
         function processAvatar(input) {
             if (input.files[0]) {
@@ -236,7 +253,6 @@
                 r.readAsDataURL(input.files[0]);
             }
         }
-        // 背景、搜尋等其餘功能維持原樣代碼...
         function openBgSettings() { document.getElementById('bg-settings-modal').style.display='block'; document.getElementById('close-overlay').style.display='block'; }
         function applyBackground(i) { if(i.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('chat-bg-layer').style.backgroundImage=`url(${e.target.result})`; localStorage.setItem('chat-bg',e.target.result); }; r.readAsDataURL(i.files[0]); } }
         function updateBgOpacity(v) { document.getElementById('chat-bg-layer').style.opacity=v; localStorage.setItem('chat-bg-opacity',v); }
