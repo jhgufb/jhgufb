@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
-        /* 基礎設定：禁止選取文字，但 input 除外 */
+        /* 基礎設定：全域禁止選取，防止長按文字彈出選單 */
         * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
         input, textarea { -webkit-user-select: text; user-select: text; font-size: 16px !important; }
         body { font-family: -apple-system, sans-serif; overflow: hidden; background: #f0f2f5; }
@@ -23,11 +23,12 @@
         .bubble-other { background-color: #ffffff; border-radius: 0 12px 12px 12px; align-self: flex-start; }
         .sticker-mode { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
         
-        /* 關鍵：圖片必須允許 user-select 才能彈出下載選單 */
+        /* 聊天室內的小圖 */
         .media-content { 
             max-width: 180px; border-radius: 8px; display: block; cursor: pointer; 
             pointer-events: auto !important; 
             -webkit-user-select: auto !important; user-select: auto !important; 
+            -webkit-touch-callout: default !important; /* 允許 iOS 長按選單 */
         }
         
         .highlight-flash { background-color: #fff3cd !important; }
@@ -36,7 +37,7 @@
 
         #close-overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: transparent; }
         
-        /* Reaction Bar 修正：置中顯示 */
+        /* Reaction Bar */
         #reaction-bar { 
             display: none; position: fixed; z-index: 3000; background: white; 
             border-radius: 30px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); 
@@ -46,11 +47,16 @@
         
         #msg-menu { display: none; position: fixed; z-index: 3000; background: white; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); min-width: 160px; }
         
+        /* Photo Viewer 大圖查看器 */
         #photo-viewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9000; align-items: center; justify-content: center; }
         #full-img { 
             max-width: 95%; max-height: 85%; object-fit: contain;
-            -webkit-user-select: auto !important; user-select: auto !important; 
+            /* 核心：必須重設為允許選取同埋預設 callout */
+            -webkit-user-select: auto !important; 
+            user-select: auto !important; 
+            -webkit-touch-callout: default !important; 
             pointer-events: auto !important; 
+            display: block;
         }
 
         #media-page { display: none; position: fixed; inset: 0; background: white; z-index: 8000; flex-direction: column; }
@@ -189,7 +195,7 @@
         });
 
         function handleStart(id, s, t, e) {
-            // 重要：如果是圖片，不要彈出自製 Menu，這樣手機系統才會彈出下載選單
+            // 如果點擊圖片，唔彈出自製 Menu，方便彈出原生選單
             if (e.target.tagName === 'IMG') return;
 
             selectedMsg = {id, sender:s, text:decodeURIComponent(t)};
@@ -218,7 +224,13 @@
         function closeAll() { ['msg-menu','reaction-bar','close-overlay','bg-settings-modal','profile-modal'].forEach(id=>document.getElementById(id).style.display='none'); }
         function openProfileModal() { document.getElementById('profile-modal').style.display='block'; document.getElementById('close-overlay').style.display='block'; }
         function openBgSettings() { document.getElementById('bg-settings-modal').style.display='block'; document.getElementById('close-overlay').style.display='block'; }
-        function zoomImg(s) { document.getElementById('full-img').src=s; document.getElementById('photo-viewer').style.display='flex'; }
+        
+        function zoomImg(s) { 
+            const img = document.getElementById('full-img');
+            img.src = s; 
+            document.getElementById('photo-viewer').style.display = 'flex'; 
+        }
+
         function applyBackground(i) { if(i.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('chat-bg-layer').style.backgroundImage=`url(${e.target.result})`; localStorage.setItem('chat-bg',e.target.result); }; r.readAsDataURL(i.files[0]); } }
         function updateBgOpacity(v) { document.getElementById('chat-bg-layer').style.opacity=v; localStorage.setItem('chat-bg-opacity',v); }
         function scrollToOriginal(id) { const el = document.getElementById('msg-' + id); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); const bubble = el.querySelector('.bubble'); bubble.classList.add('highlight-flash'); setTimeout(() => bubble.classList.remove('highlight-flash'), 2000); } }
