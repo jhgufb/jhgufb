@@ -20,8 +20,19 @@
         .bubble { max-width: 80%; padding: 8px 12px; font-size: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; margin-bottom: 2px; transition: background-color 0.5s; }
         .bubble-me { background-color: #dcf8c6; border-radius: 12px 12px 0 12px; align-self: flex-end; }
         .bubble-other { background-color: #ffffff; border-radius: 0 12px 12px 12px; align-self: flex-start; }
+        
+        /* 修正圖片選取：允許長按彈出系統選單 */
         .sticker-mode { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
-        .media-content { max-width: 180px; border-radius: 8px; display: block; cursor: pointer; pointer-events: auto !important; }
+        .media-content { 
+            max-width: 180px; border-radius: 8px; display: block; cursor: pointer; 
+            pointer-events: auto !important; 
+            -webkit-user-select: auto !important; user-select: auto !important; 
+        }
+        #full-img { 
+            max-width: [95%]; max-height: [80%]; object-contain; 
+            pointer-events: auto !important; 
+            -webkit-user-select: auto !important; user-select: auto !important; 
+        }
         
         .highlight-flash { background-color: #fff3cd !important; }
         .avatar-box { width: 38px; height: 38px; min-width: 38px; border-radius: 8px; overflow: hidden; margin-right: 8px; align-self: flex-start; border: 1px solid #eee; background: #fff; }
@@ -100,7 +111,7 @@
         <button onclick="sendMessage()" class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-sm"><i class="fas fa-paper-plane text-sm"></i></button>
     </div>
 
-    <div id="photo-viewer" onclick="this.style.display='none'"><img id="full-img" src="" class="max-w-[95%] max-h-[80%] object-contain"></div>
+    <div id="photo-viewer" onclick="this.style.display='none'"><img id="full-img" src="" onclick="event.stopPropagation()"></div>
 
     <div id="profile-modal">
         <h3 class="font-bold mb-4 text-center">設置資料</h3>
@@ -194,6 +205,9 @@
         });
 
         function handleStart(id, s, t, e) {
+            // 如果長按的是圖片，則不彈出回覆選單，讓手機系統處理下載選單
+            if (e.target.tagName === 'IMG') return;
+
             selectedMsg = {id, sender:s, text:decodeURIComponent(t)};
             window.lp = setTimeout(() => {
                 const r = e.touches[0];
@@ -243,7 +257,14 @@
         function closeAll() { ['msg-menu','reaction-bar','close-overlay','bg-settings-modal','profile-modal'].forEach(id=>document.getElementById(id).style.display='none'); }
         function openProfileModal() { document.getElementById('profile-modal').style.display='block'; document.getElementById('close-overlay').style.display='block'; }
         function openBgSettings() { document.getElementById('bg-settings-modal').style.display='block'; document.getElementById('close-overlay').style.display='block'; }
-        function zoomImg(s) { document.getElementById('full-img').src=s; document.getElementById('photo-viewer').style.display='flex'; }
+        
+        function zoomImg(s) { 
+            const viewer = document.getElementById('photo-viewer');
+            const img = document.getElementById('full-img');
+            img.src = s;
+            viewer.style.display = 'flex'; 
+        }
+
         function applyBackground(i) { if(i.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('chat-bg-layer').style.backgroundImage=`url(${e.target.result})`; localStorage.setItem('chat-bg',e.target.result); }; r.readAsDataURL(i.files[0]); } }
         function updateBgOpacity(v) { document.getElementById('chat-bg-layer').style.opacity=v; localStorage.setItem('chat-bg-opacity',v); }
         function handleMsgClick(id) { const now = Date.now(); if (now - lastTap < 300) { db.ref('chats/'+id).update({reaction:'❤️'}); } lastTap = now; }
@@ -271,8 +292,8 @@
             if (tempAvatarBase64) updates.avatar = tempAvatarBase64;
             db.ref('notes/profile').update(updates); closeAll();
         }
-        
-        // --- 優化後的圖片壓縮與傳送功能 ---
+
+        // --- 優化後的圖片壓縮、Sticker 傳送與支援回覆功能 ---
         function autoProcessFile(input) {
             const file = input.files[0];
             if (!file) return;
@@ -284,7 +305,7 @@
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
-                    const max_size = 800; // 限制圖片最大長度
+                    const max_size = 800; // 限制圖片最大寬度或高度，減少容量
 
                     if (width > height) {
                         if (width > max_size) {
@@ -303,7 +324,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    // 壓縮成 JPEG 格式，質素 0.6
+                    // 關鍵壓縮：JPEG 格式並設定 0.6 質素，體積大幅下降
                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
 
                     db.ref('chats').push({
@@ -312,12 +333,12 @@
                         sender: MY_NAME,
                         timestamp: Date.now(),
                         seen: false,
-                        replyTo: replyTo // 支援圖片回覆
+                        replyTo: replyTo // 支援回覆功能
                     }).then(() => {
                         input.value = ""; 
                         cancelReply(); 
                     }).catch(err => {
-                        alert("傳送失敗：" + err.message);
+                        alert("圖片傳送失敗：" + err.message);
                     });
                 };
                 img.src = e.target.result;
