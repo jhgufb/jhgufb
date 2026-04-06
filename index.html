@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E ² Chat Elite Edition Fixed</title>
+    <title>E ² Chat Pro Elite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -23,16 +23,13 @@
         .sticker-mode { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
         .media-content { max-width: 180px; border-radius: 8px; display: block; cursor: pointer; pointer-events: auto !important; }
 
-        .avatar-box { width: 38px; height: 38px; min-width: 38px; border-radius: 6px; overflow: hidden; margin-right: 8px; align-self: flex-start; border: 1px solid #eee; background: #eee; }
+        .avatar-box { width: 38px; height: 38px; min-width: 38px; border-radius: 8px; overflow: hidden; margin-right: 8px; align-self: flex-start; border: 1px solid #eee; background: #fff; }
         .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
 
         #photo-viewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; align-items: center; justify-content: center; }
         #full-img { max-width: 95%; max-height: 80%; object-fit: contain; -webkit-touch-callout: default !important; -webkit-user-select: auto !important; user-select: auto !important; }
-        .viewer-tools { position: absolute; top: 30px; right: 20px; display: flex; gap: 20px; color: white; font-size: 22px; z-index: 5100; }
-
-        #reaction-bar { display: none; position: fixed; z-index: 2000; background: white; border-radius: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 280px; padding: 10px; overflow-x: auto; white-space: nowrap; }
-        #msg-menu { display: none; position: fixed; z-index: 2000; background: white; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); min-width: 150px; }
-        #bg-settings-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 20px; z-index: 3000; width: 85%; max-width: 300px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        
+        #bg-settings-modal, #profile-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 20px; z-index: 3000; width: 85%; max-width: 300px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
         
         #search-bar { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 56px; background: white; z-index: 1500; align-items: center; padding: 0 16px; border-bottom: 1px solid #eee; }
         #scroll-to-bottom { display: none; position: fixed; bottom: 85px; right: 20px; width: 42px; height: 42px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; align-items: center; justify-content: center; cursor: pointer; color: #999; }
@@ -46,38 +43,50 @@
     <div id="close-overlay" class="fixed inset-0 z-[1800] hidden" onclick="closeAll()"></div>
     
     <div id="photo-viewer">
-        <div class="viewer-tools">
-            <a id="download-link" href="" download="chat_image.jpg" class="p-2"><i class="fas fa-download"></i></a>
-            <i class="fas fa-times p-2" onclick="document.getElementById('photo-viewer').style.display='none'"></i>
+        <div class="absolute top-8 right-5 flex gap-5 text-white text-2xl z-[5100]">
+            <a id="download-link" href="" download="image.jpg"><i class="fas fa-download"></i></a>
+            <i class="fas fa-times" onclick="document.getElementById('photo-viewer').style.display='none'"></i>
         </div>
         <img id="full-img" src="" onclick="event.stopPropagation()">
     </div>
 
     <div id="bg-settings-modal">
-        <h3 class="font-bold mb-4 text-center text-gray-700">設置</h3>
-        <button class="w-full bg-green-600 text-white py-2 rounded-lg mb-4 text-sm" onclick="document.getElementById('bg-input').click()">更換背景圖片</button>
+        <h3 class="font-bold mb-4 text-center">聊天背景</h3>
+        <button class="w-full bg-green-600 text-white py-2 rounded-lg mb-4 text-sm" onclick="document.getElementById('bg-input').click()">從相簿選取</button>
         <input type="file" id="bg-input" class="hidden" accept="image/*" onchange="applyBackground(this)">
-        <label class="block text-xs text-gray-400 mb-2 text-center">背景透明度</label>
+        <label class="block text-xs text-gray-400 mb-2 text-center">透明度</label>
         <input type="range" id="bg-opacity-slider" min="0.1" max="1" step="0.05" class="w-full accent-green-600" oninput="updateBgOpacity(this.value)">
         <button class="w-full mt-4 font-bold text-green-700 pt-4 border-t" onclick="closeAll()">完成</button>
     </div>
 
-    <header class="h-14 border-b flex items-center justify-between px-4 bg-white z-20 shadow-sm relative">
+    <div id="profile-modal">
+        <h3 class="font-bold mb-4 text-center">個人資料設置</h3>
+        <input id="profile-name-input" type="text" placeholder="顯示名字 (例如: E ²)" class="w-full border rounded-lg p-2 mb-4 text-sm outline-none">
+        <button class="w-full bg-blue-500 text-white py-2 rounded-lg mb-4 text-sm" onclick="document.getElementById('avatar-input').click()">從相簿選取對方頭像</button>
+        <input type="file" id="avatar-input" class="hidden" accept="image/*" onchange="processAvatar(this)">
+        <div id="avatar-preview-box" class="flex justify-center mb-4 hidden">
+            <img id="avatar-preview-img" src="" class="w-16 h-16 rounded-lg object-cover border">
+        </div>
+        <button class="w-full mt-2 bg-green-600 text-white py-2 rounded-lg font-bold" onclick="saveProfile()">儲存並更新</button>
+        <button class="w-full mt-2 text-gray-400 text-sm" onclick="closeAll()">取消</button>
+    </div>
+
+    <header class="h-14 border-b flex items-center justify-between px-4 bg-white z-20 shadow-sm">
         <div class="flex items-center gap-2">
-            <i class="fas fa-pen text-gray-300 text-[12px] cursor-pointer p-1.5 border rounded" onclick="editProfile()"></i>
+            <i class="fas fa-pen text-gray-300 text-[12px] cursor-pointer p-1.5 border rounded" onclick="openProfileModal()"></i>
             <span id="user-display" class="font-bold text-sm text-gray-700">載入中...</span>
         </div>
         <div class="flex gap-1 text-gray-400">
-            <i class="fas fa-palette p-2 cursor-pointer" onclick="openBgSettings()"></i>
-            <i class="fas fa-images p-2 cursor-pointer" onclick="toggleMediaPage(true)"></i>
-            <i class="fas fa-search p-2 cursor-pointer" onclick="toggleSearch(true)"></i>
-            <i class="fas fa-trash-alt p-2 cursor-pointer text-red-200" onclick="clearAllHistory()"></i>
+            <i class="fas fa-palette p-2" onclick="openBgSettings()"></i>
+            <i class="fas fa-images p-2" onclick="toggleMediaPage(true)"></i>
+            <i class="fas fa-search p-2" onclick="toggleSearch(true)"></i>
+            <i class="fas fa-trash-alt p-2 text-red-200" onclick="clearAllHistory()"></i>
         </div>
     </header>
 
     <div id="search-bar">
         <i class="fas fa-arrow-left text-gray-500 p-2" onclick="toggleSearch(false)"></i>
-        <input id="search-input" type="text" placeholder="搜尋對話內容..." class="flex-1 bg-gray-100 rounded-full px-4 py-1 mx-2 outline-none text-sm" oninput="doSearch()">
+        <input id="search-input" type="text" placeholder="搜尋內容..." class="flex-1 bg-gray-100 rounded-full px-4 py-1 mx-2 outline-none text-sm" oninput="doSearch()">
     </div>
 
     <div id="media-page" class="hidden fixed inset-0 bg-white z-[4000] flex flex-col overflow-y-auto">
@@ -98,11 +107,11 @@
     </div>
     
     <div id="msg-menu" class="text-sm">
-        <div id="menu-unsend" class="p-4 border-b text-red-500 font-medium" onclick="executeUnsend()"><i class="fas fa-undo mr-2"></i> 撤回訊息</div>
-        <div class="p-4 text-blue-600 font-medium" onclick="startReply()"><i class="fas fa-reply mr-2"></i> 回覆訊息</div>
+        <div id="menu-unsend" class="p-4 border-b text-red-500" onclick="executeUnsend()">撤回訊息</div>
+        <div class="p-4 text-blue-600" onclick="startReply()">回覆訊息</div>
     </div>
 
-    <div id="reply-preview" class="hidden p-3 bg-white border-l-4 border-green-500 mx-3 mb-2 rounded relative shadow-sm">
+    <div id="reply-preview" class="hidden p-3 bg-white border-l-4 border-green-500 mx-3 mb-2 rounded relative">
         <div id="reply-text" class="text-xs text-gray-400 truncate"></div>
         <i class="fas fa-times absolute right-2 top-2 text-gray-300" onclick="cancelReply()"></i>
     </div>
@@ -110,7 +119,7 @@
     <div class="p-3 bg-white flex items-center gap-2 border-t z-30 relative">
         <label class="text-green-600 text-2xl px-1 cursor-pointer"><i class="fas fa-plus-circle"></i><input type="file" id="file-input" class="hidden" onchange="autoProcessFile(this)"></label>
         <input id="chat-input" class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm outline-none" placeholder="輸入訊息..." oninput="updateTypingStatus()">
-        <button onclick="sendMessage()" class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-transform"><i class="fas fa-paper-plane text-sm"></i></button>
+        <button onclick="sendMessage()" class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-sm"><i class="fas fa-paper-plane text-sm"></i></button>
     </div>
 
     <script>
@@ -118,7 +127,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const urlParams = new URLSearchParams(window.location.search);
-        let MY_NAME = urlParams.get('user') || "E", selectedMsg = null, replyTo = null, lastTap = 0, allMsgs = [], otherAvatar = "";
+        let MY_NAME = urlParams.get('user') || "E", selectedMsg = null, replyTo = null, lastTap = 0, allMsgs = [], otherAvatar = "", tempAvatarBase64 = "";
 
         // --- 初始化背景 ---
         window.onload = () => {
@@ -128,25 +137,65 @@
             document.getElementById('bg-opacity-slider').value = o;
         };
 
-        // --- 名字與頭像設定 ---
+        // --- Profile 邏輯 (正方形裁剪) ---
         db.ref('notes/profile').on('value', s => { 
             const data = s.val() || {};
             document.getElementById('user-display').innerText = (data.name || "E ²") + " (" + MY_NAME + ")";
             otherAvatar = data.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
         });
-        function editProfile() {
-            const n = prompt("修改顯示名字：");
-            const a = prompt("輸入對方頭像 URL：");
-            if(n !== null || a !== null) db.ref('notes/profile').update({ name: n || "E ²", avatar: a || otherAvatar });
+
+        function openProfileModal() {
+            document.getElementById('profile-modal').style.display = 'block';
+            document.getElementById('close-overlay').style.display = 'block';
+            db.ref('notes/profile').once('value', s => { if(s.exists()) document.getElementById('profile-name-input').value = s.val().name || ""; });
         }
 
-        // --- 功能控制 ---
+        function processAvatar(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const size = 200; // 強制 200x200
+                        canvas.width = size; canvas.height = size;
+                        const ctx = canvas.getContext('2d');
+                        // 裁剪中間正方形
+                        const min = Math.min(img.width, img.height);
+                        const sx = (img.width - min) / 2;
+                        const sy = (img.height - min) / 2;
+                        ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+                        tempAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                        document.getElementById('avatar-preview-box').classList.remove('hidden');
+                        document.getElementById('avatar-preview-img').src = tempAvatarBase64;
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function saveProfile() {
+            const newName = document.getElementById('profile-name-input').value;
+            const updates = { name: newName || "E ²" };
+            if (tempAvatarBase64) updates.avatar = tempAvatarBase64;
+            db.ref('notes/profile').update(updates);
+            closeAll();
+        }
+
+        // --- 背景功能 ---
         function openBgSettings() { document.getElementById('bg-settings-modal').style.display='block'; document.getElementById('close-overlay').style.display='block'; }
         function applyBackground(i) { if(i.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('chat-bg-layer').style.backgroundImage=`url(${e.target.result})`; localStorage.setItem('chat-bg',e.target.result); }; r.readAsDataURL(i.files[0]); } }
         function updateBgOpacity(v) { document.getElementById('chat-bg-layer').style.opacity=v; localStorage.setItem('chat-bg-opacity',v); }
-        function closeAll() { document.getElementById('msg-menu').style.display='none'; document.getElementById('reaction-bar').style.display='none'; document.getElementById('close-overlay').style.display='none'; document.getElementById('bg-settings-modal').style.display='none'; }
+        function closeAll() { 
+            document.getElementById('msg-menu').style.display='none'; 
+            document.getElementById('reaction-bar').style.display='none'; 
+            document.getElementById('close-overlay').style.display='none'; 
+            document.getElementById('bg-settings-modal').style.display='none'; 
+            document.getElementById('profile-modal').style.display='none';
+        }
 
-        // --- 核心訊息監聽 ---
+        // --- 核心訊息渲染 (Seen/Typing/Avatar) ---
         db.ref('chats').on('value', snap => {
             const list = document.getElementById('msg-list');
             let html = "", lastD = ""; allMsgs = [];
@@ -154,17 +203,15 @@
                 const m = c.val(); m.id = c.key; allMsgs.push(m);
                 const isMe = m.sender === MY_NAME, isS = m.type === 'sticker';
                 if (!isMe && !m.seen) db.ref('chats/'+c.key).update({seen:true});
-                
                 const d = new Date(m.timestamp).toLocaleDateString();
                 if(d !== lastD) { html += `<div class="date-divider"><span>${d}</span></div>`; lastD = d; }
-                
                 const content = isS ? `<img src="${m.data}" class="media-content" onclick="event.stopPropagation(); zoomImg('${m.data}')">` : `<span>${m.text}</span>`;
                 const reply = m.replyTo ? `<div class="text-[10px] opacity-40 border-l-2 border-green-500 pl-1 mb-1 truncate">${m.replyTo.text}</div>` : "";
                 const seen = isMe ? (m.seen ? '<i class="fas fa-check-double text-blue-400 ml-1"></i>' : '<i class="fas fa-check ml-1"></i>') : "";
                 const avatar = !isMe ? `<div class="avatar-box"><img src="${otherAvatar}"></div>` : "";
 
                 html += `
-                <div id="msg-${c.key}" class="msg-wrapper flex ${isMe?'justify-end':'justify-start'} mb-3 px-1" 
+                <div class="msg-wrapper flex ${isMe?'justify-end':'justify-start'} mb-3 px-1" 
                      onclick="handleMsgClick('${c.key}')" 
                      ontouchstart="handleStart('${c.key}','${m.sender}','${encodeURIComponent(m.text||"")}', event)" 
                      ontouchend="clearTimeout(window.lp)">
@@ -184,7 +231,7 @@
             scrollToEnd();
         });
 
-        // --- 互動功能 ---
+        // --- 互動功能 (Heart/Reply/Unsend) ---
         function zoomImg(src) { document.getElementById('full-img').src=src; document.getElementById('download-link').href=src; document.getElementById('photo-viewer').style.display='flex'; }
         function handleMsgClick(id) {
             const now = Date.now();
@@ -205,32 +252,22 @@
             }, 600);
         }
 
-        // --- 工具功能 ---
+        // --- 其他工具 ---
         const chatBox = document.getElementById('chat-content');
         function scrollToEnd() { chatBox.scrollTop = chatBox.scrollHeight; }
         chatBox.addEventListener('scroll', () => { document.getElementById('scroll-to-bottom').style.display = (chatBox.scrollTop < chatBox.scrollHeight - 800) ? 'flex' : 'none'; });
-
         function toggleSearch(s) { document.getElementById('search-bar').style.display=s?'flex':'none'; if(!s) { document.querySelectorAll('.msg-wrapper').forEach(w=>w.style.display='flex'); document.getElementById('search-input').value=""; } }
         function doSearch() { 
             const v = document.getElementById('search-input').value.toLowerCase();
-            document.querySelectorAll('.msg-wrapper').forEach(w => {
-                const text = w.innerText.toLowerCase();
-                w.style.display = text.includes(v) ? 'flex' : 'none';
-            });
+            document.querySelectorAll('.msg-wrapper').forEach(w => { w.style.display = w.innerText.toLowerCase().includes(v) ? 'flex' : 'none'; });
         }
-
         function toggleMediaPage(s) { 
-            const p = document.getElementById('media-page');
-            p.style.display = s ? 'flex' : 'none';
+            const p = document.getElementById('media-page'); p.style.display = s ? 'flex' : 'none';
             if(s) {
-                const g = document.getElementById('media-grid-container');
-                g.innerHTML = "";
-                allMsgs.filter(m=>m.type==='sticker').reverse().forEach(m => {
-                    g.innerHTML += `<img src="${m.data}" class="aspect-square object-cover w-full" onclick="zoomImg('${m.data}')">`;
-                });
+                const g = document.getElementById('media-grid-container'); g.innerHTML = "";
+                allMsgs.filter(m=>m.type==='sticker').reverse().forEach(m => { g.innerHTML += `<img src="${m.data}" class="aspect-square object-cover w-full" onclick="zoomImg('${m.data}')">`; });
             }
         }
-
         function sendMessage() {
             const i = document.getElementById('chat-input');
             if(i.value.trim() || replyTo) {
@@ -244,7 +281,6 @@
         function customReact() { const emo = prompt("輸入 Emoji："); if(emo) addReact(emo); }
         function executeUnsend() { if(selectedMsg) db.ref('chats/'+selectedMsg.id).remove(); closeAll(); }
         function clearAllHistory() { if(confirm("確定清空所有對話紀錄？")) db.ref().remove(); }
-
         function autoProcessFile(input) {
             if (input.files && input.files[0]) {
                 const r = new FileReader();
@@ -264,7 +300,6 @@
                 r.readAsDataURL(input.files[0]);
             }
         }
-
         function updateTypingStatus() { db.ref('typing/'+MY_NAME).set(true); clearTimeout(window.tT); window.tT=setTimeout(()=>db.ref('typing/'+MY_NAME).set(false),2000); }
         db.ref('typing').on('value', snap => {
             let s=false; for(let u in snap.val()){ if(u!==MY_NAME && snap.val()[u]){ document.getElementById('typing-name').innerText=u; s=true; break; } }
