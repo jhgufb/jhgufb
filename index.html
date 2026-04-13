@@ -1,54 +1,235 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>404 Not Found</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
-        body {
-            background-color: #fff;
-            color: #000;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-            text-align: center;
+        /* 基礎樣式 */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; position: fixed; background: #fff; }
+        
+        /* 404 偽裝層 */
+        #fake-404 {
+            position: fixed; inset: 0; z-index: 99999; background: white;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-family: -apple-system, sans-serif; text-align: center; padding: 20px;
+            user-select: none; -webkit-user-select: none;
         }
-        h1 {
-            font-size: 24px;
-            font-weight: 500;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #ddd;
-            width: 100%;
-            max-width: 400px;
+
+        /* 倒數圓圈樣式 */
+        #unlock-timer {
+            position: absolute; width: 60px; height: 60px; pointer-events: none; display: none;
         }
-        p {
-            font-size: 14px;
-            color: #333;
-            margin: 0;
+        #unlock-timer svg { transform: rotate(-90deg); }
+        #unlock-timer circle {
+            fill: none; stroke-width: 4; stroke: #ddd;
         }
-        .error-code {
-            margin-top: 50px;
-            font-size: 12px;
-            color: #999;
-            text-transform: uppercase;
+        #unlock-timer .progress {
+            stroke: #333; stroke-dasharray: 151; stroke-dashoffset: 151;
+            transition: stroke-dashoffset 0.1s linear;
         }
+
+        /* 原本的程式碼 UI 容器 */
+        #real-program { display: none; width: 100%; height: 100%; position: absolute; inset: 0; z-index: 10; background: #000; }
+
+        /* 你原本的 CSS */
+        #viewport { width: 100vw; height: 100%; overflow: hidden; position: relative; background: #fff; }
+        #main-slider { display: flex; width: 200vw; height: 100%; transition: transform 0.3s ease-out; }
+        .page { width: 100vw; height: 100%; position: relative; display: flex; flex-direction: column; flex-shrink: 0; }
+        #chat-bg-layer { position: absolute; inset: 0; z-index: 0; background-color: #efe7dd; background-size: cover; background-position: center; pointer-events: none; }
+        .chat-container { flex: 1; overflow-y: auto; z-index: 1; padding: 15px; position: relative; -webkit-overflow-scrolling: touch; }
+        .bubble { max-width: 75%; padding: 8px 12px; font-size: 15px; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.1); margin-bottom: 12px; }
+        .bubble-me { background: #dcf8c6; border-radius: 12px 12px 0 12px; align-self: flex-end; }
+        .bubble-other { background: #fff; border-radius: 0 12px 12px 12px; align-self: flex-start; }
+        .img-mode { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
+        .img-mode img { border-radius: 12px; max-width: 200px; height: auto; }
+        .avatar-box { width: 35px; height: 35px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #eee; }
+        .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
+        #scroll-btn { position: absolute; bottom: 90px; right: 20px; width: 40px; height: 40px; background: white; border-radius: 50%; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; color: #555; }
+        #overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: transparent; }
+        .menu-pop { display: none; position: fixed; z-index: 3000; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        #photo-viewer { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; align-items: center; justify-content: center; }
+        #media-gallery { display: none; position: fixed; inset: 0; background: white; z-index: 5000; flex-direction: column; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; overflow-y: auto; }
+        .gallery-item { aspect-ratio: 1; overflow: hidden; background: #f7f7f7; }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+        .memo-me { background: #e3f2fd; border-left: 5px solid #2196f3; }
+        .memo-other { background: #fff9c4; border-left: 5px solid #fbc02d; }
     </style>
 </head>
 <body>
 
-    <h1>404 Not Found</h1>
-    <p>The requested URL was not found on this server.</p>
-    
-    <div class="error-code">
-        HTTP 404 / ERR_CONNECTION_REFUSED
+    <div id="fake-404">
+        <h1 style="font-size: 24px; border-bottom: 1px solid #ddd; padding-bottom: 10px; width: 80%; color: #333;">404 Not Found</h1>
+        <p style="margin-top: 15px; color: #666; font-size: 14px;">The requested URL was not found on this server.</p>
+        
+        <div id="unlock-timer">
+            <svg width="60" height="60">
+                <circle cx="30" cy="30" r="24"></circle>
+                <circle class="progress" cx="30" cy="30" r="24"></circle>
+            </svg>
+        </div>
     </div>
 
+    <div id="real-program">
+        <div id="viewport">
+            <div id="main-slider">
+                <div class="page" id="chat-page">
+                    <div id="chat-bg-layer"></div>
+                    <header class="h-14 bg-white/95 border-b flex items-center justify-between px-4 z-50">
+                        <div class="flex items-center gap-2" onclick="openModal('profile-modal')">
+                            <span id="display-name" class="font-bold text-sm text-black">Loading...</span>
+                        </div>
+                        <div class="flex gap-4 text-gray-400">
+                            <i class="fas fa-palette" onclick="openModal('bg-modal')"></i>
+                            <i class="fas fa-images" onclick="openGallery()"></i>
+                            <i class="fas fa-search" onclick="toggleSearch(true)"></i>
+                            <i class="fas fa-trash-alt text-red-200" onclick="clearChat()"></i>
+                        </div>
+                    </header>
+                    <div id="chat-flow" class="chat-container no-scrollbar flex flex-col" onscroll="checkScroll()">
+                        <div id="msg-list" class="flex flex-col"></div>
+                    </div>
+                    <div id="scroll-btn" onclick="goBottom()"><i class="fas fa-chevron-down"></i></div>
+                    <footer class="p-3 bg-white border-t flex items-center gap-2 z-50">
+                        <label class="text-green-500 text-2xl px-1"><i class="fas fa-plus-circle"></i><input type="file" id="msg-img-input" class="hidden" accept="image/*" onchange="sendImage(this)"></label>
+                        <input id="chat-input" class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm outline-none text-black" placeholder="輸入訊息...">
+                        <button onclick="sendMsg()" class="bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md"><i class="fas fa-paper-plane text-sm"></i></button>
+                    </footer>
+                </div>
+                <div class="page" id="board-page">
+                    <header class="h-14 bg-white border-b flex items-center justify-between px-4 z-50">
+                        <span class="font-bold text-black">留言板 📌</span>
+                        <button onclick="addMemo()" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-xs font-bold">+ 寫留言</button>
+                    </header>
+                    <div id="memo-flow" class="flex-1 overflow-y-auto p-4 bg-gray-50"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay" onclick="closeAll()"></div>
+    <div id="photo-viewer">
+        <div class="absolute top-10 right-5 text-white text-2xl p-4 z-[10000]" onclick="document.getElementById('photo-viewer').style.display='none'"><i class="fas fa-times"></i></div>
+        <img id="full-img" class="max-w-full max-h-[90vh] object-contain">
+    </div>
+
+    <script>
+        // --- 解鎖邏輯 ---
+        let holdTimer, progressTimer;
+        let holdActive = false;
+        const fakePage = document.getElementById('fake-404');
+        const realApp = document.getElementById('real-program');
+        const timerUI = document.getElementById('unlock-timer');
+        const progressCircle = timerUI.querySelector('.progress');
+
+        function startHold(e) {
+            holdActive = true;
+            let x = e.touches ? e.touches[0].clientX : e.clientX;
+            let y = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            // 延遲1秒才顯示圓圈 (避開誤觸)
+            holdTimer = setTimeout(() => {
+                if(!holdActive) return;
+                timerUI.style.display = 'block';
+                timerUI.style.left = (x - 30) + 'px';
+                timerUI.style.top = (y - 80) + 'px';
+                
+                let start = Date.now();
+                let duration = 4000; // 圓圈轉動4秒 (總共5秒)
+                
+                progressTimer = setInterval(() => {
+                    let elapsed = Date.now() - start;
+                    let p = Math.min(elapsed / duration, 1);
+                    progressCircle.style.strokeDashoffset = 151 - (151 * p);
+                    
+                    if (p >= 1) {
+                        clearInterval(progressTimer);
+                        unlock();
+                    }
+                }, 50);
+            }, 1000);
+        }
+
+        function endHold() {
+            holdActive = false;
+            clearTimeout(holdTimer);
+            clearInterval(progressTimer);
+            timerUI.style.display = 'none';
+            progressCircle.style.strokeDashoffset = 151;
+        }
+
+        function unlock() {
+            fakePage.style.display = 'none';
+            realApp.style.display = 'block';
+            endHold();
+        }
+
+        // --- 切換後台自動上鎖 ---
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") {
+                location.reload(); // 最安全做法：直接 reload 變回 404
+            }
+        });
+
+        fakePage.addEventListener('touchstart', startHold);
+        fakePage.addEventListener('touchend', endHold);
+        fakePage.addEventListener('mousedown', startHold);
+        fakePage.addEventListener('mouseup', endHold);
+
+        // --- 你原本的程式碼邏輯 ---
+        const firebaseConfig = { apiKey: "AIzaSyAauSWTZnyVdX0s2aMgqaWey2TQTI3Pmamo", authDomain: "elise-99449.firebaseapp.com", databaseURL: "https://elise-99449-default-rtdb.firebaseio.com", projectId: "elise-99449", storageBucket: "elise-99449.appspot.com", messagingSenderId: "612842016696", appId: "1:612842016696:web:7485447024c7c36a3f094d" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const urlParams = new URLSearchParams(window.location.search);
+        let MY_NAME = urlParams.get('user') || "E";
+        let curOtherAvatar = "", lastTap = 0, allMedia = [];
+
+        window.onload = () => {
+            const localBG = localStorage.getItem('chat-bg'), localOp = localStorage.getItem('chat-bg-op') || "1";
+            if(localBG) document.getElementById('chat-bg-layer').style.backgroundImage = `url(${localBG})`;
+            document.getElementById('chat-bg-layer').style.opacity = localOp;
+            db.ref('notes/profile').on('value', snap => {
+                const d = snap.val() || {};
+                curOtherAvatar = d.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                document.getElementById('display-name').innerText = (d.name || "E ²") + " (" + MY_NAME + ")";
+            });
+            db.ref('board').on('value', snap => {
+                const flow = document.getElementById('memo-flow'); flow.innerHTML = "";
+                snap.forEach(child => {
+                    const m = child.val();
+                    const colorClass = m.user === MY_NAME ? 'memo-me' : 'memo-other';
+                    flow.innerHTML += `<div class="p-4 rounded-xl mb-4 shadow-sm ${colorClass}">
+                        <p class="text-sm">${m.text}</p>
+                        <p class="text-[9px] text-gray-400 mt-2 text-right">${new Date(m.time).toLocaleString()}</p>
+                    </div>`;
+                });
+            });
+        };
+
+        db.ref('chats').on('value', snap => {
+            const list = document.getElementById('msg-list'); html = ""; lastDate = "";
+            snap.forEach(child => {
+                const m = child.val(), isMe = m.sender === MY_NAME, id = child.key;
+                const avatar = !isMe ? `<div class="avatar-box mr-2"><img src="${curOtherAvatar}"></div>` : "";
+                const content = m.type === 'img' ? `<img src="${m.data}" class="rounded-lg max-w-[200px]">` : `<span>${m.text}</span>`;
+                html += `<div class="flex ${isMe?'justify-end':'justify-start'} mb-4 px-1 msg-row">
+                    ${avatar}<div class="bubble ${isMe?'bubble-me':'bubble-other'}">${content}</div>
+                </div>`;
+            });
+            list.innerHTML = html; goBottom();
+        });
+
+        function goBottom() { document.getElementById('chat-flow').scrollTo({ top: 999999, behavior: 'smooth' }); }
+        function sendMsg() {
+            const input = document.getElementById('chat-input'), txt = input.value.trim();
+            if(txt) { db.ref('chats').push({ text: txt, sender: MY_NAME, time: Date.now() }); input.value = ""; }
+        }
+        function addMemo() { const t = prompt("內容:"); if(t) db.ref('board').push({ text: t, time: Date.now(), user: MY_NAME }); }
+    </script>
 </body>
 </html>
