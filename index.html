@@ -10,12 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
         /* --- 偽裝層與解鎖樣式 --- */
-        #fake-404 {
-            position: fixed; inset: 0; z-index: 99999; background: white;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-family: -apple-system, sans-serif; text-align: center; padding: 20px;
-            user-select: none; -webkit-user-select: none;
-        }
+        #fake-404 { position: fixed; inset: 0; z-index: 99999; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: -apple-system, sans-serif; text-align: center; padding: 20px; user-select: none; -webkit-user-select: none; }
         #unlock-timer { position: absolute; width: 60px; height: 60px; pointer-events: none; display: none; z-index: 100000; }
         #unlock-timer svg { transform: rotate(-90deg); }
         #unlock-timer circle { fill: none; stroke-width: 4; stroke: #eee; }
@@ -37,6 +32,8 @@
         .bubble { max-width: 75%; padding: 8px 12px; font-size: 15px; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
         .bubble-me { background: #dcf8c6; border-radius: 12px 12px 0 12px; }
         .bubble-other { background: #fff; border-radius: 0 12px 12px 12px; }
+        /* 網址跳轉樣式 */
+        .bubble a { color: #007bff; text-decoration: underline; word-break: break-all; pointer-events: auto !important; user-select: auto !important; }
         .img-mode { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
         .img-mode img { border-radius: 12px; max-width: 200px; height: auto; }
         .avatar-box { width: 35px; height: 35px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #eee; }
@@ -56,8 +53,10 @@
 <body>
 
     <div id="fake-404">
-        <h1 style="font-size: 24px; border-bottom: 1px solid #ddd; padding-bottom: 10px; width: 80%; color: #333;">404 Not Found</h1>
-        <p style="margin-top: 15px; color: #666; font-size: 14px;">The requested URL was not found on this server.</p>
+        <div id="trigger-area">
+            <h1 style="font-size: 24px; border-bottom: 1px solid #ddd; padding-bottom: 10px; width: 100%; color: #333;">404 Not Found</h1>
+            <p style="margin-top: 15px; color: #666; font-size: 14px;">The requested URL was not found on this server.</p>
+        </div>
         <div id="unlock-timer">
             <svg width="60" height="60"><circle cx="30" cy="30" r="24"></circle><circle class="progress" cx="30" cy="30" r="24"></circle></svg>
         </div>
@@ -117,6 +116,7 @@
         </div>
         <div id="msg-menu" class="menu-pop flex flex-col w-[150px] overflow-hidden">
             <div class="p-4 border-b text-center text-blue-500 font-medium active:bg-gray-50" onclick="setupReply()">回覆</div>
+            <div class="p-4 border-b text-center text-gray-700 font-medium active:bg-gray-50" onclick="copyMsg()">複製</div>
             <div id="menu-edit" class="p-4 border-b text-center text-green-600 font-medium active:bg-gray-50" onclick="setupEdit()">編輯</div>
             <div id="menu-unsend" class="p-4 text-center text-red-500 font-bold active:bg-gray-50" onclick="unsend()">撤回</div>
         </div>
@@ -126,7 +126,7 @@
         </div>
         <div id="profile-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-2xl z-[4000] w-[85%] hidden shadow-2xl">
             <h3 class="font-bold mb-4 text-center text-sm">設置名字</h3>
-            <input id="set-name" type="text" class="w-full border p-3 rounded mb-4 outline-none">
+            <input id="set-name" type="text" class="w-full border p-3 rounded mb-4 outline-none text-black">
             <button class="w-full bg-blue-50 text-blue-600 py-3 rounded mb-2 font-bold text-xs" onclick="document.getElementById('set-avatar').click()">換頭像</button>
             <input type="file" id="set-avatar" class="hidden" onchange="handleAvatar(this)">
             <button class="w-full bg-green-600 text-white py-3 rounded font-bold" onclick="saveProfile()">儲存</button>
@@ -140,9 +140,9 @@
     </div>
 
     <script>
-        // --- 解鎖邏輯 ---
+        // --- 解鎖邏輯 (限定文字區域觸發) ---
         let holdTimer, progressTimer, holdActive = false;
-        const fakePage = document.getElementById('fake-404'), realApp = document.getElementById('real-program'), timerUI = document.getElementById('unlock-timer'), progressCircle = timerUI.querySelector('.progress');
+        const triggerArea = document.getElementById('trigger-area'), fakePage = document.getElementById('fake-404'), realApp = document.getElementById('real-program'), timerUI = document.getElementById('unlock-timer'), progressCircle = timerUI.querySelector('.progress');
         function startHold(e) {
             holdActive = true; let x = e.touches ? e.touches[0].clientX : e.clientX, y = e.touches ? e.touches[0].clientY : e.clientY;
             holdTimer = setTimeout(() => {
@@ -158,14 +158,35 @@
         function endHold() { holdActive = false; clearTimeout(holdTimer); clearInterval(progressTimer); timerUI.style.display = 'none'; progressCircle.style.strokeDashoffset = 151; }
         function unlock() { fakePage.style.display = 'none'; realApp.style.display = 'block'; endHold(); }
         document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") location.reload(); });
-        fakePage.addEventListener('touchstart', startHold); fakePage.addEventListener('touchend', endHold);
+        triggerArea.addEventListener('touchstart', startHold); triggerArea.addEventListener('touchend', endHold);
 
-        // --- 你原本的完整 Script (Function 全部保留) ---
+        // --- 核心邏輯 ---
         const firebaseConfig = { apiKey: "AIzaSyAauSWTZnyVdX0s2aMgqaWey2TQTI3Pmamo", authDomain: "elise-99449.firebaseapp.com", databaseURL: "https://elise-99449-default-rtdb.firebaseio.com", projectId: "elise-99449", storageBucket: "elise-99449.appspot.com", messagingSenderId: "612842016696", appId: "1:612842016696:web:7485447024c7c36a3f094d" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const urlParams = new URLSearchParams(window.location.search);
         let MY_NAME = urlParams.get('user') || "E", curOtherAvatar = "", selectedID = null, replyData = null, isEditing = false, tempAvatar = null, lastTap = 0, allMedia = [];
+
+        // 網址自動轉換函數
+        function linkify(text) {
+            const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+            const wwwPattern = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+            return text.replace(urlPattern, '<a href="$1" target="_blank">$1</a>')
+                       .replace(wwwPattern, '$1<a href="http://$2" target="_blank">$2</a>');
+        }
+
+        // 複製功能
+        function copyMsg() {
+            const textToCopy = window.lastSelectedTxt;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const toast = document.createElement('div');
+                toast.innerText = 'Copied!';
+                toast.style = "position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.7); color:white; padding:10px 20px; border-radius:20px; z-index:10000; font-size:14px;";
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 1500);
+            });
+            closeAll();
+        }
 
         // Slider
         let startX = 0, pageIdx = 0; const slider = document.getElementById('main-slider');
@@ -190,7 +211,7 @@
                 const flow = document.getElementById('memo-flow'); flow.innerHTML = "";
                 snap.forEach(child => {
                     const m = child.val(), colorClass = m.user === MY_NAME ? 'memo-me' : 'memo-other';
-                    flow.innerHTML += `<div class="p-4 rounded-xl mb-4 shadow-sm ${colorClass}" oncontextmenu="if(confirm('刪除？')) db.ref('board/'+child.key).remove(); return false;"><p class="text-sm">${m.text}</p><p class="text-[9px] text-gray-400 mt-2 text-right">${new Date(m.time).toLocaleString()}</p></div>`;
+                    flow.innerHTML += `<div class="p-4 rounded-xl mb-4 shadow-sm ${colorClass}" oncontextmenu="if(confirm('刪除？')) db.ref('board/'+child.key).remove(); return false;"><p class="text-sm">${linkify(m.text)}</p><p class="text-[9px] text-gray-400 mt-2 text-right">${new Date(m.time).toLocaleString()}</p></div>`;
                 });
             });
         };
@@ -205,12 +226,13 @@
                 const avatar = !isMe ? `<div class="avatar-box mr-2"><img src="${curOtherAvatar}"></div>` : "";
                 const reply = m.replyTo ? `<div class="text-[10px] opacity-40 border-l-2 border-green-500 pl-1 mb-1 truncate">${m.replyTo}</div>` : "";
                 if(m.type === 'img') allMedia.push(m.data);
-                const content = m.type === 'img' ? `<img src="${m.data}" onclick="zoomImg('${m.data}')">` : `<span>${m.text}</span>`;
+                const content = m.type === 'img' ? `<img src="${m.data}" onclick="zoomImg('${m.data}')">` : `<span>${linkify(m.text)}</span>`;
                 html += `<div class="flex ${isMe?'justify-end':'justify-start'} mb-4 px-1 msg-row" onclick="handleDblClick('${id}')">${avatar}<div class="flex flex-col ${isMe?'items-end':'items-start'}"><div class="flex ${isMe?'flex-row-reverse':'flex-row'} items-end gap-1"><div class="bubble ${isMe?'bubble-me':'bubble-other'} ${m.type==='img'?'img-mode':''}" ontouchstart="handleTouchStart(event, '${id}', ${isMe}, '${encodeURIComponent(m.text||"")}')" ontouchend="clearTimeout(lp)">${reply}${content}${m.edited?'<span class="text-[9px] opacity-30 ml-1">(已編輯)</span>':''}${m.react ? `<div class="absolute -bottom-2 ${isMe?'left-0':'right-0'} bg-white border rounded-full px-1.5 text-[10px] shadow-sm">${m.react}</div>` : ""}</div><div class="text-[9px] text-gray-400 flex flex-col items-center">${(isMe && m.seen)?'<span class="text-blue-400 font-bold">已讀</span>':''}<span>${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div></div></div>`;
             });
             list.innerHTML = html; goBottom();
         });
 
+        // 基本 Functions
         function toggleSearch(s) { document.getElementById('search-box').style.display = s ? 'flex' : 'none'; if(!s) { document.getElementById('search-input').value = ""; doSearch(); } }
         function doSearch() { const v = document.getElementById('search-input').value.toLowerCase(); document.querySelectorAll('.msg-row').forEach(r => { r.style.display = r.innerText.toLowerCase().includes(v) ? 'flex' : 'none'; }); }
         function checkScroll() { const f = document.getElementById('chat-flow'), b = document.getElementById('scroll-btn'); b.style.display = (f.scrollHeight - f.scrollTop - f.clientHeight > 300) ? 'flex' : 'none'; }
@@ -218,7 +240,7 @@
         function openGallery() { const l = document.getElementById('gallery-list'); l.innerHTML = ""; allMedia.slice().reverse().forEach(s => { l.innerHTML += `<div class="gallery-item" onclick="zoomImg('${s}')"><img src="${s}"></div>`; }); document.getElementById('media-gallery').style.display = 'flex'; }
         function handleDblClick(id) { const n = Date.now(); if(n - lastTap < 300) db.ref('chats/'+id+'/react').set('❤️'); lastTap = n; }
         function sendMsg() { const i = document.getElementById('chat-input'), t = i.value.trim(); if(!t && !replyData) return; if(isEditing) { db.ref('chats/'+selectedID).update({ text: t, edited: true }); isEditing = false; } else { db.ref('chats').push({ text: t, sender: MY_NAME, time: Date.now(), seen: false, replyTo: replyData ? replyData.text : null }); } i.value = ""; cancelReply(); }
-        let lp; function handleTouchStart(e, id, isMe, txt) { selectedID = id; const raw = decodeURIComponent(txt); lp = setTimeout(() => { const t = e.touches[0]; document.getElementById('overlay').style.display = 'block'; const rb = document.getElementById('react-bar'); rb.style.display = 'flex'; rb.style.top = (t.clientY - 110)+'px'; rb.style.left = '50%'; rb.style.transform = 'translateX(-50%)'; const mm = document.getElementById('msg-menu'); mm.style.display = 'flex'; mm.style.top = (t.clientY + 20)+'px'; mm.style.left = '50%'; mm.style.transform = 'translateX(-50%)'; document.getElementById('menu-unsend').style.display = isMe ? 'block' : 'none'; document.getElementById('menu-edit').style.display = isMe ? 'block' : 'none'; window.lastSelectedTxt = raw; }, 600); }
+        let lp; function handleTouchStart(e, id, isMe, txt) { if(e.target.tagName === 'A') return; selectedID = id; const raw = decodeURIComponent(txt); lp = setTimeout(() => { const t = e.touches[0]; document.getElementById('overlay').style.display = 'block'; const rb = document.getElementById('react-bar'); rb.style.display = 'flex'; rb.style.top = (t.clientY - 110)+'px'; rb.style.left = '50%'; rb.style.transform = 'translateX(-50%)'; const mm = document.getElementById('msg-menu'); mm.style.display = 'flex'; mm.style.top = (t.clientY + 20)+'px'; mm.style.left = '50%'; mm.style.transform = 'translateX(-50%)'; document.getElementById('menu-unsend').style.display = isMe ? 'block' : 'none'; document.getElementById('menu-edit').style.display = isMe ? 'block' : 'none'; window.lastSelectedTxt = raw; }, 600); }
         function react(e) { if(e) db.ref('chats/'+selectedID+'/react').set(e); closeAll(); }
         function unsend() { if(confirm("確定撤回？")) db.ref('chats/'+selectedID).remove(); closeAll(); }
         function zoomImg(u) { document.getElementById('full-img').src = u; document.getElementById('photo-viewer').style.display = 'flex'; }
